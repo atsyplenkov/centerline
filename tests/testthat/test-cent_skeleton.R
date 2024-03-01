@@ -21,5 +21,6 @@ test_that("simplify parameter affects the output", {
 })
 
 test_that("cent_skeleton errors on incorrect input types", {
-  expect_error(cent_skeleton("not an sf object"), "Input is not of class 'sf' or 'sfc'")
+  expect_error(cent_skeleton("not an sf object"),
+               "Input is not of class 'SpatVector'")
 })

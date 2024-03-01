@@ -45,24 +45,14 @@ library(terra)
 #> terra 1.7.65
 
 polygon <- 
-  sf::st_read("inst/extdata/example.gpkg", layer = "polygon")
-#> Reading layer `polygon' from data source 
-#>   `C:\Projects\centerline\inst\extdata\example.gpkg' using driver `GPKG'
-#> Simple feature collection with 1 feature and 0 fields
-#> Geometry type: POLYGON
-#> Dimension:     XY
-#> Bounding box:  xmin: 1830871 ymin: 5453779 xmax: 1830881 ymax: 5453790
-#> Projected CRS: NZGD2000 / New Zealand Transverse Mercator 2000
+  terra::vect("inst/extdata/example.gpkg", layer = "polygon")
 
-plot(
-  terra::vect(polygon)
-)
+plot(polygon)
 
 pol_skeleton <- 
   cent_skeleton(polygon, simplify = T) 
 
 pol_skeleton |> 
-  terra::vect() |> 
   plot(col = "blue", add = T)
 ```
 

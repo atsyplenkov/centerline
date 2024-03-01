@@ -4,14 +4,7 @@
 \alias{cent_skeleton}
 \title{Create a skeleton of a closed polygon object}
 \usage{
-cent_skeleton(
-  input,
-  simplify = TRUE,
-  keep = 0.1,
-  method = "dp",
-  keep_shapes = T,
-  ...
-)
+cent_skeleton(input, simplify = TRUE, keep = 0.1, method = "dp", ...)
 }
 \arguments{
 \item{input}{\code{sf} or \code{sfc} polygons object}
@@ -19,17 +12,13 @@ cent_skeleton(
 \item{simplify}{logical, indicating if the returning skeleton should be
 simplified using \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} approach}
 
+\item{keep}{see below}
+
+\item{method}{see below}
+
 \item{...}{
   Arguments passed on to \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify}}
   \describe{
-    \item{\code{keep}}{proportion of points to retain (0-1; default 0.05)}
-    \item{\code{method}}{simplification method to use: \code{"vis"} for Visvalingam
-algorithm, or \code{"dp"} for Douglas-Peuker algorithm. If left as
-\code{NULL} (default), uses Visvalingam simplification but modifies the
-area metric by underweighting the effective area of points at the vertex of
-more acute angles, resulting in a smoother appearance. See this
-\url{https://github.com/mbloch/mapshaper/wiki/Simplification-Tips}{link}
-for more information.}
     \item{\code{weighting}}{Coefficient for weighting Visvalingam simplification
 (default is 0.7). Higher values produce smoother output. weighting=0 is
 equivalent to unweighted Visvalingam simplification.}

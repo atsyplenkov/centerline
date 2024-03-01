@@ -44,17 +44,14 @@ library(centerline)
 library(terra)
 
 polygon <- 
-  sf::st_read("inst/extdata/example.gpkg", layer = "polygon")
+  terra::vect("inst/extdata/example.gpkg", layer = "polygon")
 
-plot(
-  terra::vect(polygon)
-)
+plot(polygon)
 
 pol_skeleton <- 
   cent_skeleton(polygon, simplify = T) 
 
 pol_skeleton |> 
-  terra::vect() |> 
   plot(col = "blue", add = T)
 
 ```
