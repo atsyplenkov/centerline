@@ -16,7 +16,9 @@ Suggests:
 Config/testthat/edition: 3
 Language: en-US
 Imports: 
+    dplyr (>= 1.0),
     geos (>= 0.2.4),
     rmapshaper (>= 0.5),
     sf (>= 1.0),
+    sfnetworks (>= 0.6),
     terra (>= 1.7)

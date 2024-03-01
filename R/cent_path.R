@@ -1,0 +1,264 @@
+#' Find the shortest path between start and end points within a polygon
+#'
+#' @param skeleton an output from [centerline::cent_skeleton()] function
+#' @param start_point one or more starting points. It should be of the same
+#' class as the \code{skeleton} parameter
+#' @param end_point one ending point of the same class as \code{skeleton} and
+#' \code{start_point} parameters.
+#'
+#' @details
+#' The following function uses the [sfnetworks::st_network_paths()] approach to
+#' connect \code{start_point} with \code{end_point} by employing the
+#' \code{skeleton} of a closed polygon as potential routes.
+#'
+#' It is important to note that multiple starting points are permissible,
+#' but there can only be one ending point. Should there be two or more
+#' ending points, the algorithm will generate an error.
+#'
+#' Neither starting nor ending points are required to be located
+#' on the edges of a polygon (i.e., snapped to the boundary);
+#' they can be positioned wherever possible inside the polygon.
+#'
+#' The algorithm identifies the closest nodes of the polygon's skeleton
+#' to the starting and ending points and then connects them
+#' using the shortest path possible along the skeleton.
+#' Therefore, if more precise placement of start and end
+#' points is necessary, consider executing the [centerline::cent_skeleton()]
+#' function with the \code{simplify = FALSE} option. In doing so, the resulting
+#' skeleton may be more detailed, increasing the likelihood that the starting
+#' and ending points are already situated on the skeleton paths.
+#'
+#' @return a list of \code{sf}, \code{sfc} or \code{SpatVector} class
+#' objects of a \code{LINESTRING} geometry
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'
+#' library(terra)
+#' library(centerline)
+#'
+#' # Load Polygon and points data
+#' polygon <- terra::vect("inst/extdata/example.gpkg", layer = "polygon")
+#'
+#' points <- terra::vect("inst/extdata/example.gpkg", layer = "polygon_points")
+#'
+#' # Find polygon's skeleton
+#' pol_skeleton <- cent_skeleton(polygon)
+#'
+#' # Connect points
+#' pol_path <-
+#'   cent_path(
+#'     skeleton = pol_skeleton,
+#'     start_point = subset(points, points$type == "start"),
+#'     end_point = subset(points, points$type != "start")
+#'   )
+#'
+#' # Plot
+#' plot(polygon)
+#' plot(pol_skeleton, col = "blue", add = T)
+#' plot(points[1:2, ], col = "red",  add = T)
+#' plot(pol_path[[1]], lwd = 3, add = T)
+#' }
+#'
+cent_path <-
+  function(skeleton,
+           start_point,
+           end_point) {
+    UseMethod("cent_path")
+  }
+
+#' @export
+cent_path.sf <-
+  function(skeleton,
+           start_point,
+           end_point) {
+    cent_path_sf(
+      skeleton = skeleton,
+      start_point = start_point,
+      end_point = end_point
+    )
+  }
+
+#' @export
+cent_path.sfc <-
+  function(skeleton,
+           start_point,
+           end_point) {
+    cent_path_sf(
+      skeleton = skeleton,
+      start_point = start_point,
+      end_point = end_point
+    )
+  }
+
+#' @export
+cent_path.SpatVector <-
+  function(skeleton,
+           start_point,
+           end_point) {
+    cent_path_terra(
+      skeleton = skeleton,
+      start_point = start_point,
+      end_point = end_point
+    )
+  }
+
+
+cent_path_terra <-
+  function(
+      skeleton,
+      start_point,
+      end_point) {
+    # Check if input is of class 'SpatVector' and 'lines'
+    stopifnot(check_terra_lines(skeleton))
+
+    # Transform to sf objects
+    skeleton <-
+      sf::st_as_sf(skeleton)
+    start_point <-
+      sf::st_as_sf(start_point)
+    end_point <-
+      sf::st_as_sf(end_point)
+
+    # Transform to sfnetwork
+    pol_network <-
+      skeleton |>
+      sfnetworks::as_sfnetwork(directed = F)
+
+    # Find indices of nearest nodes for start ...
+    start_nodes <-
+      sf::st_nearest_feature(start_point, pol_network)
+
+    # ... and end points
+    end_nodes <-
+      sf::st_nearest_feature(end_point, pol_network)
+
+    # Check if there are several end nodes
+    stopifnot(
+      length(end_nodes) == 1
+    )
+
+    # Measure length of the edges
+    net <-
+      pol_network |>
+      sfnetworks::activate("edges") |>
+      dplyr::mutate(length = sfnetworks::edge_length())
+
+    # Find the shortest path among centerline
+    paths <-
+      sfnetworks::st_network_paths(
+        net,
+        from = end_nodes,
+        to = start_nodes,
+        weights = "length"
+      )
+
+    # Convert to GEOS geometries and create a GEOS collection
+    lines_list_geos <-
+      lapply(paths$edge_paths,
+             function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)) |>
+      lapply(sf::st_as_sf) |>
+      lapply(geos::as_geos_geometry) |>
+      lapply(geos::geos_make_collection) |>
+      lapply(geos::geos_line_merge)
+
+    # Check if we need to reverse the lines
+    start_centerline <- geos::geos_point_start(lines_list_geos[[1]])
+    end_centerline <- geos::geos_point_end(lines_list_geos[[1]])
+    end_geos <-
+      geos::as_geos_geometry(end_point)
+
+    start_tail <- geos::geos_distance(end_geos, start_centerline)
+    end_tail <- geos::geos_distance(end_geos, end_centerline)
+
+    if (start_tail < end_tail) {
+      lines_list_sf <-
+        lines_list_geos |>
+        lapply(geos::geos_reverse) |>
+        lapply(sf::st_as_sf) |>
+        lapply(terra::vect)
+    } else {
+      lines_list_sf <-
+        lines_list_geos |>
+        lapply(sf::st_as_sf) |>
+        lapply(terra::vect)
+    }
+
+    return(lines_list_sf)
+    # dplyr::bind_rows(lines_list_sf, .id = "cent_id")
+  }
+
+cent_path_sf <-
+  function(
+      skeleton,
+      start_point,
+      end_point) {
+    # Check if input is of class 'sf' and 'LINESTRING'
+    stopifnot(check_sf_lines(skeleton))
+
+    # Transform to sfnetwork
+    pol_network <-
+      skeleton |>
+      sfnetworks::as_sfnetwork(directed = F)
+
+    # Find indices of nearest nodes for start ...
+    start_nodes <-
+      sf::st_nearest_feature(start_point, pol_network)
+
+    # ... and end points
+    end_nodes <-
+      sf::st_nearest_feature(end_point, pol_network)
+
+    # Check if there are several end nodes
+    stopifnot(
+      length(end_nodes) == 1
+    )
+
+    # Measure length of the edges
+    net <-
+      pol_network |>
+      sfnetworks::activate("edges") |>
+      dplyr::mutate(length = sfnetworks::edge_length())
+
+    # Find the shortest path among centerline
+    paths <-
+      sfnetworks::st_network_paths(
+        net,
+        from = end_nodes,
+        to = start_nodes,
+        weights = "length"
+      )
+
+    # Convert to GEOS geometries and create a GEOS collection
+    lines_list_geos <-
+      lapply(paths$edge_paths,
+             function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)) |>
+      lapply(sf::st_as_sf) |>
+      lapply(geos::as_geos_geometry) |>
+      lapply(geos::geos_make_collection) |>
+      lapply(geos::geos_line_merge)
+
+    # Check if we need to reverse the lines
+    start_centerline <- geos::geos_point_start(lines_list_geos[[1]])
+    end_centerline <- geos::geos_point_end(lines_list_geos[[1]])
+    end_geos <-
+      geos::as_geos_geometry(end_point)
+
+    start_tail <- geos::geos_distance(end_geos, start_centerline)
+    end_tail <- geos::geos_distance(end_geos, end_centerline)
+
+    if (start_tail < end_tail) {
+      lines_list_sf <-
+        lines_list_geos |>
+        lapply(geos::geos_reverse) |>
+        lapply(sf::st_as_sf)
+    } else {
+      lines_list_sf <-
+        lines_list_geos |>
+        lapply(sf::st_as_sf)
+    }
+
+    return(lines_list_sf)
+    # dplyr::bind_rows(lines_list_sf, .id = "cent_id")
+  }

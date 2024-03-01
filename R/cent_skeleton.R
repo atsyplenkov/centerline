@@ -1,6 +1,6 @@
 #' Create a skeleton of a closed polygon object
 #'
-#' @param input \code{sf} or \code{sfc} polygons object
+#' @param input \code{sf}, \code{sfc} or \code{SpatVector} polygons object
 #' @param simplify logical, indicating if the returning skeleton should be
 #' simplified using [rmapshaper::ms_simplify()] approach
 #' @param keep see below
@@ -8,7 +8,8 @@
 #'
 #' @inheritDotParams rmapshaper::ms_simplify
 #'
-#' @return An \code{sf} or \code{sfc} class object of a \code{LINESTRING} geometry
+#' @return An \code{sf}, \code{sfc} or \code{SpatVector} class
+#' object of a \code{LINESTRING} geometry
 #' @export
 #'
 #'
