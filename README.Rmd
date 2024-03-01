@@ -19,38 +19,43 @@ knitr::opts_chunk$set(
 [![R-CMD-check](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of centerline is to ...
+The `centerline` R package simplifies the extraction of linear features from complex polygons, such as roads or rivers, by computing their centerlines (or median-axis) using Voronoi diagrams. It uses the super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) and [`rmapshaper`](http://andyteucher.ca/rmapshaper/index.html) libraries in the background.
 
 ## Installation
 
-You can install the development version of centerline from [GitHub](https://github.com/) with:
+You can install the development version of `centerline` from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("atsyplenkov/centerline")
+
+# OR
+
+# install.packages("pak")
+pak::pak("atsyplenkov/centerline")
 ```
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+At the heart of this package is the `cent_skeleton` function, which efficiently computes the skeleton of closed 2D polygonal geometries. The function uses [`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html) by default to keep the most important nodes and reduce noise from the beginning.
 
 ```{r example}
 library(centerline)
-## basic example code
+library(terra)
+
+polygon <- 
+  sf::st_read("inst/extdata/example.gpkg", layer = "polygon")
+
+plot(
+  terra::vect(polygon)
+)
+
+pol_skeleton <- 
+  cent_skeleton(polygon, simplify = T) 
+
+pol_skeleton |> 
+  terra::vect() |> 
+  plot(col = "blue", add = T)
+
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.

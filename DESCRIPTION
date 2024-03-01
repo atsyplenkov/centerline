@@ -1,10 +1,11 @@
 Package: centerline
-Title: What the Package Does (One Line, Title Case)
+Title: Extract Centerline From A Closed Polygons
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+    person("Anatoly", "Tsyplenkov", , "atsyplenkov@gmail.com", role = c("cre", "aut"),
+           comment = c(ORCID = "0000-0003-4144-8402"))
+Maintainer: Anatoly Tsyplenkov <atsyplenkov@gmail.com>
+Description: The {centerline} R package simplifies the extraction of linear features from closed 2D polygons, such as lakes, by computing their centerlines (or median-axis) using Voronoi diagrams. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -14,3 +15,8 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Language: en-US
+Imports: 
+    geos (>= 0.2.4),
+    rmapshaper (>= 0.5),
+    sf (>= 1.0),
+    terra (>= 1.7)

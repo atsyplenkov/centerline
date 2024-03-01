@@ -8,47 +8,62 @@
 [![R-CMD-check](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of centerline is to …
+The `centerline` R package simplifies the extraction of linear features
+from complex polygons, such as roads or rivers, by computing their
+centerlines (or median-axis) using Voronoi diagrams. It uses the
+super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) and
+[`rmapshaper`](http://andyteucher.ca/rmapshaper/index.html) libraries in
+the background.
 
 ## Installation
 
-You can install the development version of centerline from
+You can install the development version of `centerline` from
 [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("atsyplenkov/centerline")
+
+# OR
+
+# install.packages("pak")
+pak::pak("atsyplenkov/centerline")
 ```
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+At the heart of this package is the `cent_skeleton` function, which
+efficiently computes the skeleton of closed 2D polygonal geometries. The
+function uses
+[`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html)
+by default to keep the most important nodes and reduce noise from the
+beginning.
 
 ``` r
 library(centerline)
-## basic example code
+library(terra)
+#> terra 1.7.65
+
+polygon <- 
+  sf::st_read("inst/extdata/example.gpkg", layer = "polygon")
+#> Reading layer `polygon' from data source 
+#>   `C:\Projects\centerline\inst\extdata\example.gpkg' using driver `GPKG'
+#> Simple feature collection with 1 feature and 0 fields
+#> Geometry type: POLYGON
+#> Dimension:     XY
+#> Bounding box:  xmin: 1830871 ymin: 5453779 xmax: 1830881 ymax: 5453790
+#> Projected CRS: NZGD2000 / New Zealand Transverse Mercator 2000
+
+plot(
+  terra::vect(polygon)
+)
+
+pol_skeleton <- 
+  cent_skeleton(polygon, simplify = T) 
+
+pol_skeleton |> 
+  terra::vect() |> 
+  plot(col = "blue", add = T)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+<img src="man/figures/README-example-1.png" width="100%" />
