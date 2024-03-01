@@ -6,6 +6,14 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
+![GitHub R package
+version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline?label=github)
+![GitHub last
+commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features

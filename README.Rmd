@@ -17,6 +17,10 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml)
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![CRAN status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
+![GitHub R package version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline?label=github)
+![GitHub last commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features from complex polygons, such as roads or rivers, by computing their centerlines (or median-axis) using Voronoi diagrams. It uses the super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) and [`rmapshaper`](http://andyteucher.ca/rmapshaper/index.html) libraries in the background.
