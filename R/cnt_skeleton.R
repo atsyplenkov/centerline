@@ -113,10 +113,14 @@ cnt_skeleton_sf <-
     pol <- input
 
     if (simplify) {
+
+      fixed_keep <-
+        ifelse(keep < 0.05, 0.05, keep)
+
       pol <-
         rmapshaper::ms_simplify(
           pol,
-          keep = keep,
+          keep = fixed_keep,
           method = method,
           keep_shapes = T,
           ...
@@ -160,10 +164,14 @@ cnt_skeleton_terra <-
 
 
     if (simplify) {
+
+      fixed_keep <-
+        ifelse(keep < 0.05, 0.05, keep)
+
       pol <-
         rmapshaper::ms_simplify(
           pol,
-          keep = keep,
+          keep = fixed_keep,
           method = method,
           keep_shapes = T,
           ...

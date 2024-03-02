@@ -124,6 +124,19 @@ plot(pol_path[[1]], lwd = 3, add = T)
 
 <img src="man/figures/README-example2-1.png" width="100%" />
 
+## Roadmap
+
+    centerline 📦
+    ├── Closed geometries (e.g., lakes)
+    │   ├── When we do know starting and ending points (e.g., landslides) ✅
+    │   │   ├── centerline::cnt_skeleton ✅
+    │   │   └── centerline::cnt_path ✅
+    │   └── When we do NOT have points (e.g., lakes) 🔲
+    │       ├── centerline::cnt_skeleton ✅
+    │       └── centerline::cnt_path_guess 🔲
+    ├── Linear objects (e.g., roads or rivers)  🔲
+    └── Collapse parallel lines to centerline 🔲
+
 ## Alternatives
 
 - **R**
