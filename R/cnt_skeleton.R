@@ -22,26 +22,26 @@
 #'
 #' plot(polygon)
 #'
-#' pol_skeleton <- cent_skeleton(polygon)
+#' pol_skeleton <- cnt_skeleton(polygon)
 #'
 #' plot(pol_skeleton)
-cent_skeleton <-
+cnt_skeleton <-
   function(input,
            simplify = TRUE,
            keep = 0.1,
            method = "dp",
            ...) {
-    UseMethod("cent_skeleton")
+    UseMethod("cnt_skeleton")
   }
 
 #' @export
-cent_skeleton.sf <-
+cnt_skeleton.sf <-
   function(input,
            simplify = TRUE,
            keep = 0.1,
            method = "dp",
            ...) {
-    .cent_skeleton(
+    cnt_skeleton_sf(
       input = input,
       simplify = simplify,
       keep = keep,
@@ -51,13 +51,13 @@ cent_skeleton.sf <-
   }
 
 #' @export
-cent_skeleton.sfc <-
+cnt_skeleton.sfc <-
   function(input,
            simplify = TRUE,
            keep = 0.1,
            method = "dp",
            ...) {
-    .cent_skeleton(
+    cnt_skeleton_sf(
       input = input,
       simplify = simplify,
       keep = keep,
@@ -67,13 +67,13 @@ cent_skeleton.sfc <-
   }
 
 #' @export
-cent_skeleton.SpatVector <-
+cnt_skeleton.SpatVector <-
   function(input,
            simplify = TRUE,
            keep = 0.1,
            method = "dp",
            ...) {
-    .cent_skeleton_terra(
+    cnt_skeleton_terra(
       input = input,
       simplify = simplify,
       keep = keep,
@@ -83,13 +83,13 @@ cent_skeleton.SpatVector <-
   }
 
 #' @export
-cent_skeleton.character <-
+cnt_skeleton.character <-
   function(input,
            simplify = TRUE,
            keep = 0.1,
            method = "dp",
            ...) {
-    .cent_skeleton_terra(
+    cnt_skeleton_terra(
       input = input,
       simplify = simplify,
       keep = keep,
@@ -98,7 +98,7 @@ cent_skeleton.character <-
     )
   }
 
-.cent_skeleton <-
+cnt_skeleton_sf <-
   function(input,
            simplify = TRUE,
            keep = 0.1,
@@ -144,7 +144,7 @@ cent_skeleton.character <-
   }
 
 
-.cent_skeleton_terra <-
+cnt_skeleton_terra <-
   function(input,
            simplify = TRUE,
            keep = 0.1,

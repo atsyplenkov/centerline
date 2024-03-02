@@ -1,6 +1,6 @@
 #' Find the shortest path between start and end points within a polygon
 #'
-#' @param skeleton an output from [centerline::cent_skeleton()] function
+#' @param skeleton an output from [centerline::cnt_skeleton()] function
 #' @param start_point one or more starting points. It should be of the same
 #' class as the \code{skeleton} parameter
 #' @param end_point one ending point of the same class as \code{skeleton} and
@@ -23,7 +23,7 @@
 #' to the starting and ending points and then connects them
 #' using the shortest path possible along the skeleton.
 #' Therefore, if more precise placement of start and end
-#' points is necessary, consider executing the [centerline::cent_skeleton()]
+#' points is necessary, consider executing the [centerline::cnt_skeleton()]
 #' function with the \code{simplify = FALSE} option. In doing so, the resulting
 #' skeleton may be more detailed, increasing the likelihood that the starting
 #' and ending points are already situated on the skeleton paths.
@@ -49,11 +49,11 @@
 #'
 #' # Find polygon's skeleton
 #' pol_skeleton <-
-#'   cent_skeleton(polygon)
+#'   cnt_skeleton(polygon)
 #'
 #' # Connect points
 #' pol_path <-
-#'   cent_path(
+#'   cnt_path(
 #'     skeleton = pol_skeleton,
 #'     start_point = subset(points, points$type == "start"),
 #'     end_point = subset(points, points$type != "start")
@@ -66,19 +66,19 @@
 #' plot(pol_path[[1]], lwd = 3, add = T)
 #' }
 #'
-cent_path <-
+cnt_path <-
   function(skeleton,
            start_point,
            end_point) {
-    UseMethod("cent_path")
+    UseMethod("cnt_path")
   }
 
 #' @export
-cent_path.sf <-
+cnt_path.sf <-
   function(skeleton,
            start_point,
            end_point) {
-    cent_path_sf(
+    cnt_path_sf(
       skeleton = skeleton,
       start_point = start_point,
       end_point = end_point
@@ -86,11 +86,11 @@ cent_path.sf <-
   }
 
 #' @export
-cent_path.sfc <-
+cnt_path.sfc <-
   function(skeleton,
            start_point,
            end_point) {
-    cent_path_sf(
+    cnt_path_sf(
       skeleton = skeleton,
       start_point = start_point,
       end_point = end_point
@@ -98,11 +98,11 @@ cent_path.sfc <-
   }
 
 #' @export
-cent_path.SpatVector <-
+cnt_path.SpatVector <-
   function(skeleton,
            start_point,
            end_point) {
-    cent_path_terra(
+    cnt_path_terra(
       skeleton = skeleton,
       start_point = start_point,
       end_point = end_point
@@ -110,7 +110,7 @@ cent_path.SpatVector <-
   }
 
 
-cent_path_terra <-
+cnt_path_terra <-
   function(
       skeleton,
       start_point,
@@ -191,10 +191,10 @@ cent_path_terra <-
     }
 
     return(lines_list_sf)
-    # dplyr::bind_rows(lines_list_sf, .id = "cent_id")
+    # dplyr::bind_rows(lines_list_sf, .id = "cnt_id")
   }
 
-cent_path_sf <-
+cnt_path_sf <-
   function(
       skeleton,
       start_point,
@@ -265,5 +265,5 @@ cent_path_sf <-
     }
 
     return(lines_list_sf)
-    # dplyr::bind_rows(lines_list_sf, .id = "cent_id")
+    # dplyr::bind_rows(lines_list_sf, .id = "cnt_id")
   }

@@ -40,7 +40,7 @@ pak::pak("atsyplenkov/centerline")
 
 ## Examples for closed geometries
 
-At the heart of this package is the `cent_skeleton` function, which
+At the heart of this package is the `cnt_skeleton` function, which
 efficiently computes the skeleton of closed 2D polygonal geometries. The
 function uses
 [`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html)
@@ -52,16 +52,41 @@ library(centerline)
 library(terra)
 #> terra 1.7.65
 
+# Load Polygon Of Interest (POI)
 polygon <- 
-  terra::vect("inst/extdata/example.gpkg", layer = "polygon")
+  terra::vect(
+    system.file(
+      "extdata/example.gpkg", package = "centerline"
+    ), 
+    layer = "polygon"
+  )
 
-plot(polygon)
-
+# Find POI's skeleton
 pol_skeleton <- 
-  cent_skeleton(polygon, simplify = T) 
+  cnt_skeleton(polygon, simplify = F) 
 
-pol_skeleton |> 
-  plot(col = "blue", add = T)
+# Simplified POI's skeleton
+pol_skeleton_simplify <- 
+  cnt_skeleton(polygon, simplify = T, keep = .05) 
+
+# Plot
+par(mfrow = c(1, 2))
+
+# Raw
+plot(polygon,
+     border = "grey20",
+     main = "Raw")
+plot(pol_skeleton,
+     col = "dodgerblue3",
+     add = T)
+
+# Simplified
+plot(polygon,
+     border = "grey20",
+     main = "Simplified")
+plot(pol_skeleton_simplify,
+     col = "dodgerblue3",
+     add = T)
 ```
 
 <img src="man/figures/README-example-1.png" width="100%" />
@@ -73,20 +98,27 @@ it could be the landslide initiation point and landslide terminus.
 
 ``` r
 # Load points data
-points <- terra::vect("inst/extdata/example.gpkg", layer = "polygon_points")
+points <- 
+  terra::vect(
+    system.file(
+      "extdata/example.gpkg", package = "centerline"
+    ),
+    layer = "polygon_points"
+  )
 
 # Connect points
 pol_path <-
-  cent_path(
+  cnt_path(
     skeleton = pol_skeleton,
     start_point = terra::subset(points, points$type == "start"),
     end_point = terra::subset(points, points$type != "start")
   )
 
 # Plot
-plot(polygon)
-plot(pol_skeleton, col = "blue", add = T)
-plot(points[1:2, ], col = "red",  add = T)
+plot(polygon, border = "grey20", main = "Path connecting starting and ending points")
+plot(pol_skeleton, col = "dodgerblue3", add = T)
+plot(points[1,], col = "coral2",  add = T)
+plot(points[2,], col = "green4",  add = T)
 plot(pol_path[[1]], lwd = 3, add = T)
 ```
 
