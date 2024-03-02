@@ -39,12 +39,17 @@
 #' library(centerline)
 #'
 #' # Load Polygon and points data
-#' polygon <- terra::vect("inst/extdata/example.gpkg", layer = "polygon")
+#' polygon <-
+#'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
+#'   layer = "polygon")
 #'
-#' points <- terra::vect("inst/extdata/example.gpkg", layer = "polygon_points")
+#' points <-
+#'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
+#'   layer = "polygon_points")
 #'
 #' # Find polygon's skeleton
-#' pol_skeleton <- cent_skeleton(polygon)
+#' pol_skeleton <-
+#'   cent_skeleton(polygon)
 #'
 #' # Connect points
 #' pol_path <-

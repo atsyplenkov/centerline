@@ -14,17 +14,17 @@
 #'
 #'
 #' @examples
-#' \dontrun{
 #' library(sf)
 #'
-#' polygon <- sf::st_read("inst/extdata/example.gpkg", layer = "polygon")
+#' polygon <-
+#'   sf::st_read(system.file("extdata/example.gpkg", package = "centerline"),
+#'     layer = "polygon")
 #'
 #' plot(polygon)
 #'
 #' pol_skeleton <- cent_skeleton(polygon)
 #'
 #' plot(pol_skeleton)
-#' }
 cent_skeleton <-
   function(input,
            simplify = TRUE,
