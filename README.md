@@ -1,5 +1,5 @@
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- README.md is generated from README.qmd. Please edit that file -->
 
 # centerline
 
@@ -9,11 +9,11 @@
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN
-status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
+status](https://www.r-pkg.org/badges/version/centerline.png)](https://CRAN.R-project.org/package=centerline)
 ![GitHub R package
-version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline?label=github)
+version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline?label=github.png)
 ![GitHub last
-commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline)
+commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline.png)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features
@@ -46,12 +46,13 @@ function uses
 [`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html)
 by default to keep the most important nodes and reduce noise from the
 beginning. However, it has option to densify the amount of points using
-`geos::geos_densify`, which can produce more smooth results.
+[`geos::geos_densify`](https://paleolimbot.github.io/geos/reference/geos_centroid.html),
+which can produce more smooth results.
 
 ``` r
 library(centerline)
 library(terra)
-#> terra 1.7.69
+#> terra 1.7.65
 
 # Load Polygon Of Interest (POI)
 polygon <- 
@@ -73,36 +74,47 @@ pol_skeleton_simplify <-
 # Densified POI's skeleton
 pol_skeleton_densify <- 
   cnt_skeleton(polygon, keep = 1.5) 
+```
 
+<details>
+<summary>Plot’s code</summary>
+
+``` r
 # Plot
-par(mfrow = c(1, 3))
+par(
+  mar = c(0.5, 0.5, 0.2, 0.2),
+  mfrow = c(1, 3),
+  oma = c(0, 0, 0.2, 0.2)
+)
 
 # Raw
+plot(pol_skeleton,
+     col = "dodgerblue3")
 plot(polygon,
      border = "grey20",
-     main = "Raw")
-plot(pol_skeleton,
-     col = "dodgerblue3",
+     main = "Original",
      add = T)
 
 # Simplified
+plot(pol_skeleton_simplify,
+     col = "dodgerblue3")
 plot(polygon,
      border = "grey20",
-     main = "Simplified")
-plot(pol_skeleton_simplify,
-     col = "dodgerblue3",
+     main = "Simplified",
      add = T)
 
 # Densified
+plot(pol_skeleton_densify,
+     col = "dodgerblue3")
 plot(polygon,
      border = "grey20",
-     main = "Densified")
-plot(pol_skeleton_densify,
-     col = "dodgerblue3",
+     main = "Densified",
      add = T)
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
+</details>
+
+<img src="man/figures/README-plot-1-1.png" style="width:100.0%" />
 
 However, the above-generated lines are not exactly a centerline of a
 polygon. One way to find the centerline of a closed polygon is to define
@@ -120,6 +132,7 @@ points <-
   )
 
 # Connect points
+# For original skeleton
 pol_path <-
   cnt_path(
     skeleton = pol_skeleton,
@@ -127,22 +140,43 @@ pol_path <-
     end_point = terra::subset(points, points$type != "start")
   )
 
+# For simplified skeleton
+pol_path_simplify <-
+  cnt_path(
+    skeleton = pol_skeleton_simplify,
+    start_point = terra::subset(points, points$type == "start"),
+    end_point = terra::subset(points, points$type != "start")
+  )
+
+# For densified skeleton
 pol_path_dens <-
   cnt_path(
     skeleton = pol_skeleton_densify,
     start_point = terra::subset(points, points$type == "start"),
     end_point = terra::subset(points, points$type != "start")
   )
+```
 
+<details>
+<summary>Plot’s code</summary>
 
+``` r
 # Plot
-par(mfrow = c(1, 2)) 
+par(mfrow = c(1, 3)) 
 
 # Original
 plot(polygon, border = "grey20", 
      main = paste0("Original path (L = ",
                    round(terra::perim(pol_path[[1]]), 2), " m)"))
 plot(pol_path[[1]], lwd = 3, add = T)
+plot(points[1, ], col = "coral2",  add = T)
+plot(points[2, ], col = "green4",  add = T)
+
+# Simplified
+plot(polygon, border = "grey20", 
+     main = paste0("Simplified path (L = ",
+                   round(terra::perim(pol_path_simplify[[1]]), 2), " m)"))
+plot(pol_path_simplify[[1]], lwd = 3, add = T)
 plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
@@ -155,7 +189,9 @@ plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 ```
 
-<img src="man/figures/README-example2-1.png" width="100%" />
+</details>
+
+<img src="man/figures/README-plot-2-1.png" style="width:100.0%" />
 
 ## Roadmap
 

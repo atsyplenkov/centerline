@@ -1,8 +1,8 @@
 ---
-output: github_document
+format: gfm
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- README.md is generated from README.qmd. Please edit that file -->
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -42,9 +42,11 @@ pak::pak("atsyplenkov/centerline")
 
 ## Examples for closed geometries
 
-At the heart of this package is the `cnt_skeleton` function, which efficiently computes the skeleton of closed 2D polygonal geometries. The function uses [`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html) by default to keep the most important nodes and reduce noise from the beginning. However, it has option to densify the amount of points using `geos::geos_densify`, which can produce more smooth results.
+At the heart of this package is the `cnt_skeleton` function, which efficiently computes the skeleton of closed 2D polygonal geometries. The function uses [`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html) by default to keep the most important nodes and reduce noise from the beginning. However, it has option to densify the amount of points using [`geos::geos_densify`](https://paleolimbot.github.io/geos/reference/geos_centroid.html), which can produce more smooth results.
 
-```{r example}
+```{r}
+#| label: "Skeleton example"
+
 library(centerline)
 library(terra)
 
@@ -69,38 +71,51 @@ pol_skeleton_simplify <-
 pol_skeleton_densify <- 
   cnt_skeleton(polygon, keep = 1.5) 
 
+```
+
+```{r}
+#| label: plot-1
+#| code-fold: true
+#| code-summary: "Plot's code"
+
 # Plot
-par(mfrow = c(1, 3))
+par(
+  mar = c(0.5, 0.5, 0.2, 0.2),
+  mfrow = c(1, 3),
+  oma = c(0, 0, 0.2, 0.2)
+)
 
 # Raw
+plot(pol_skeleton,
+     col = "dodgerblue3")
 plot(polygon,
      border = "grey20",
-     main = "Raw")
-plot(pol_skeleton,
-     col = "dodgerblue3",
+     main = "Original",
      add = T)
 
 # Simplified
+plot(pol_skeleton_simplify,
+     col = "dodgerblue3")
 plot(polygon,
      border = "grey20",
-     main = "Simplified")
-plot(pol_skeleton_simplify,
-     col = "dodgerblue3",
+     main = "Simplified",
      add = T)
 
 # Densified
+plot(pol_skeleton_densify,
+     col = "dodgerblue3")
 plot(polygon,
      border = "grey20",
-     main = "Densified")
-plot(pol_skeleton_densify,
-     col = "dodgerblue3",
+     main = "Densified",
      add = T)
 
 ```
 
 However, the above-generated lines are not exactly a centerline of a polygon. One way to find the centerline of a closed polygon is to define both `start` and `end` points. For example, in the case of landslides, it could be the landslide initiation point and landslide terminus.
 
-```{r example2}
+```{r}
+#| label: "Connect points example"
+
 # Load points data
 points <- 
   terra::vect(
@@ -111,6 +126,7 @@ points <-
   )
 
 # Connect points
+# For original skeleton
 pol_path <-
   cnt_path(
     skeleton = pol_skeleton,
@@ -118,6 +134,15 @@ pol_path <-
     end_point = terra::subset(points, points$type != "start")
   )
 
+# For simplified skeleton
+pol_path_simplify <-
+  cnt_path(
+    skeleton = pol_skeleton_simplify,
+    start_point = terra::subset(points, points$type == "start"),
+    end_point = terra::subset(points, points$type != "start")
+  )
+
+# For densified skeleton
 pol_path_dens <-
   cnt_path(
     skeleton = pol_skeleton_densify,
@@ -125,15 +150,29 @@ pol_path_dens <-
     end_point = terra::subset(points, points$type != "start")
   )
 
+```
+
+```{r}
+#| label: plot-2
+#| code-fold: true
+#| code-summary: "Plot's code"
 
 # Plot
-par(mfrow = c(1, 2)) 
+par(mfrow = c(1, 3)) 
 
 # Original
 plot(polygon, border = "grey20", 
      main = paste0("Original path (L = ",
                    round(terra::perim(pol_path[[1]]), 2), " m)"))
 plot(pol_path[[1]], lwd = 3, add = T)
+plot(points[1, ], col = "coral2",  add = T)
+plot(points[2, ], col = "green4",  add = T)
+
+# Simplified
+plot(polygon, border = "grey20", 
+     main = paste0("Simplified path (L = ",
+                   round(terra::perim(pol_path_simplify[[1]]), 2), " m)"))
+plot(pol_path_simplify[[1]], lwd = 3, add = T)
 plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
@@ -144,6 +183,7 @@ plot(polygon, border = "grey20",
 plot(pol_path_dens[[1]], lwd = 3, add = T)
 plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
+
 ```
 
 ## Roadmap
