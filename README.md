@@ -45,12 +45,13 @@ efficiently computes the skeleton of closed 2D polygonal geometries. The
 function uses
 [`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html)
 by default to keep the most important nodes and reduce noise from the
-beginning.
+beginning. However, it has option to densify the amount of points using
+`geos::geos_densify`, which can produce more smooth results.
 
 ``` r
 library(centerline)
 library(terra)
-#> terra 1.7.65
+#> terra 1.7.69
 
 # Load Polygon Of Interest (POI)
 polygon <- 
@@ -63,14 +64,18 @@ polygon <-
 
 # Find POI's skeleton
 pol_skeleton <- 
-  cnt_skeleton(polygon, simplify = F) 
+  cnt_skeleton(polygon, keep = 1) 
 
 # Simplified POI's skeleton
 pol_skeleton_simplify <- 
-  cnt_skeleton(polygon, simplify = T, keep = .05) 
+  cnt_skeleton(polygon, keep = .1) 
+
+# Densified POI's skeleton
+pol_skeleton_densify <- 
+  cnt_skeleton(polygon, keep = 1.5) 
 
 # Plot
-par(mfrow = c(1, 2))
+par(mfrow = c(1, 3))
 
 # Raw
 plot(polygon,
@@ -85,6 +90,14 @@ plot(polygon,
      border = "grey20",
      main = "Simplified")
 plot(pol_skeleton_simplify,
+     col = "dodgerblue3",
+     add = T)
+
+# Densified
+plot(polygon,
+     border = "grey20",
+     main = "Densified")
+plot(pol_skeleton_densify,
      col = "dodgerblue3",
      add = T)
 ```
@@ -114,12 +127,32 @@ pol_path <-
     end_point = terra::subset(points, points$type != "start")
   )
 
+pol_path_dens <-
+  cnt_path(
+    skeleton = pol_skeleton_densify,
+    start_point = terra::subset(points, points$type == "start"),
+    end_point = terra::subset(points, points$type != "start")
+  )
+
+
 # Plot
-plot(polygon, border = "grey20", main = "Path connecting starting and ending points")
-plot(pol_skeleton, col = "dodgerblue3", add = T)
-plot(points[1,], col = "coral2",  add = T)
-plot(points[2,], col = "green4",  add = T)
+par(mfrow = c(1, 2)) 
+
+# Original
+plot(polygon, border = "grey20", 
+     main = paste0("Original path (L = ",
+                   round(terra::perim(pol_path[[1]]), 2), " m)"))
 plot(pol_path[[1]], lwd = 3, add = T)
+plot(points[1, ], col = "coral2",  add = T)
+plot(points[2, ], col = "green4",  add = T)
+
+# Densified
+plot(polygon, border = "grey20", 
+     main = paste0("Densified path (L = ",
+                   round(terra::perim(pol_path_dens[[1]]), 2), " m)"))
+plot(pol_path_dens[[1]], lwd = 3, add = T)
+plot(points[1, ], col = "coral2",  add = T)
+plot(points[2, ], col = "green4",  add = T)
 ```
 
 <img src="man/figures/README-example2-1.png" width="100%" />
@@ -153,3 +186,6 @@ plot(pol_path[[1]], lwd = 3, add = T)
     library
 - 🦀 Rust:
   - [centerline_rs](https://codeberg.org/eadf/centerline_rs) library
+- **JS** Javascript:
+  - [Centerline labeling
+    blogpost](https://observablehq.com/@veltman/centerline-labeling)
