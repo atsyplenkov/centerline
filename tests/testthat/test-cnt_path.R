@@ -32,7 +32,7 @@ test_that("cnt_path errors on multiple end points", {
   skeleton <-
     cnt_skeleton(polygon)
 
-  expect_error(cnt_path(skeleton, start_point, end_points))
+  expect_error(cnt_path(skeleton, end_point, start_point))
 })
 
 

@@ -1,3 +1,29 @@
+# SF to Terra transformer
+terra_to_sf <-
+  function(input){
+
+    spatial_data <-
+      terra::as.data.frame(input)
+
+    if (length(spatial_data) == 0) {
+
+      terra::geom(input, wk = T) |>
+        wk::as_wkt() |>
+        sf::st_as_sf() |>
+        sf::st_set_crs(terra::crs(input))
+
+    } else {
+
+      terra::geom(input, wk = T) |>
+        wk::as_wkt() |>
+        sf::st_as_sf() |>
+        sf::st_set_crs(terra::crs(input)) |>
+        cbind(terra::as.data.frame(spatial_data))
+
+    }
+
+  }
+
 # Polygon checks
 check_sf_polygon <- function(input) {
   # Check if input is of class 'sf'

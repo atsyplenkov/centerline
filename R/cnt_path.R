@@ -118,13 +118,15 @@ cnt_path_terra <-
     # Check if input is of class 'SpatVector' and 'lines'
     stopifnot(check_terra_lines(skeleton))
 
+    crs <- terra::crs(skeleton)
+
     # Transform to sf objects
     skeleton <-
-      sf::st_as_sf(skeleton)
+     terra_to_sf(skeleton)
     start_point <-
-      sf::st_as_sf(start_point)
+      terra_to_sf(start_point)
     end_point <-
-      sf::st_as_sf(end_point)
+      terra_to_sf(end_point)
 
     # Transform to sfnetwork
     pol_network <-
@@ -181,13 +183,17 @@ cnt_path_terra <-
       lines_list_sf <-
         lines_list_geos |>
         lapply(geos::geos_reverse) |>
-        lapply(sf::st_as_sf) |>
-        lapply(terra::vect)
+        lapply(wk::as_wkt) |>
+        lapply(as.character) |>
+        # lapply(sf::st_as_sf) |>
+        lapply(terra::vect, crs = crs)
     } else {
       lines_list_sf <-
         lines_list_geos |>
-        lapply(sf::st_as_sf) |>
-        lapply(terra::vect)
+        lapply(wk::as_wkt) |>
+        lapply(as.character) |>
+        # lapply(sf::st_as_sf) |>
+        lapply(terra::vect, crs = crs)
     }
 
     return(lines_list_sf)

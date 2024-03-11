@@ -4,38 +4,13 @@
 \alias{cnt_skeleton}
 \title{Create a skeleton of a closed polygon object}
 \usage{
-cnt_skeleton(input, simplify = TRUE, keep = 0.1, method = "dp", ...)
+cnt_skeleton(input, keep = 0.1)
 }
 \arguments{
 \item{input}{\code{sf}, \code{sfc} or \code{SpatVector} polygons object}
 
-\item{simplify}{logical, indicating if the returning skeleton should be
-simplified using \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} approach}
-
-\item{keep}{see below}
-
-\item{method}{see below}
-
-\item{...}{
-  Arguments passed on to \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify}}
-  \describe{
-    \item{\code{weighting}}{Coefficient for weighting Visvalingam simplification
-(default is 0.7). Higher values produce smoother output. weighting=0 is
-equivalent to unweighted Visvalingam simplification.}
-    \item{\code{keep_shapes}}{Prevent small polygon features from disappearing at high
-simplification (default \code{FALSE})}
-    \item{\code{no_repair}}{disable intersection repair after simplification (default
-\code{FALSE}).}
-    \item{\code{snap}}{Snap together vertices within a small distance threshold to fix
-small coordinate misalignment in adjacent polygons. Default \code{TRUE}.}
-    \item{\code{explode}}{Should multipart polygons be converted to singlepart polygons?
-This prevents small shapes from disappearing during simplification if
-\code{keep_shapes = TRUE}. Default \code{FALSE}}
-    \item{\code{drop_null_geometries}}{should Features with null geometries be dropped?
-Ignored for \code{Spatial*} objects, as it is always \code{TRUE}.}
-    \item{\code{snap_interval}}{Specify snapping distance in source units, must be a
-numeric. Default \code{NULL}}
-  }}
+\item{keep}{numeric, proportion of points to retain (0.05-Inf; default 1).
+See Details.}
 }
 \value{
 An \code{sf}, \code{sfc} or \code{SpatVector} class
@@ -43,6 +18,20 @@ object of a \code{LINESTRING} geometry
 }
 \description{
 Create a skeleton of a closed polygon object
+}
+\details{
+\itemize{
+\item If \code{keep} equals 1 (default), no transformation will occur. The
+function will use the original geometry to find the skeleton.
+\item If the keep parameter is below 1, then the \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}}
+function will be used with Douglas-Peuker algorithm. So the original input
+geometry would be simplified, and the resulting skeleton will be cleaner but
+maybe more edgy.
+\item If the \code{keep} is above 1, then the densification
+algorithm is applied using the \code{\link[geos:geos_centroid]{geos::geos_densify()}} function. This may
+produce a very large object if keep is set more than 2. However, the
+resulting skeleton would potentially be more accurate.
+}
 }
 \examples{
 library(sf)
