@@ -193,6 +193,140 @@ plot(points[2, ], col = "green4",  add = T)
 
 <img src="man/figures/README-plot-2-1.png" style="width:100.0%" />
 
+And what if we don’t know the starting and ending locations? What if we
+just want to place our label accurately in the middle of our polygon? In
+this case, one may find the `cnt_path_guess` function useful. It returns
+the line connecting the most distant points, i.e., the polygon’s length.
+Such an approach is used in limnology for measuring [lake
+lengths](https://www.lakescientist.com/lake-shape/), for example.
+
+``` r
+library(sf)
+
+lake <- 
+  st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "lake",
+    quiet = T
+  ) |> 
+  st_cast("POLYGON")
+
+lake_centerline <- 
+  cnt_path_guess(lake, keep = 1)
+```
+
+<details>
+<summary>Plot’s code</summary>
+
+``` r
+library(ggplot2)
+#> Warning: package 'ggplot2' was built under R version 4.3.3
+library(geomtextpath)
+library(smoothr)
+#> Warning: package 'smoothr' was built under R version 4.3.3
+#> 
+#> Attaching package: 'smoothr'
+#> The following object is masked from 'package:terra':
+#> 
+#>     densify
+#> The following object is masked from 'package:stats':
+#> 
+#>     smooth
+
+lake_centerline_s <- 
+  lake_centerline |> 
+  st_union() |> 
+  st_line_merge() |> 
+  st_simplify(dTolerance = 150)  |> 
+  smooth("chaikin")
+
+cnt2 <- 
+  rbind(
+    st_as_sf(lake_centerline_s),
+    st_as_sf(lake_centerline_s)
+  )
+
+cnt2$lc <- c("black", NA_character_)
+cnt2$ll <- c("", lake$name)
+
+ggplot() +
+  geom_sf(
+    data = lake,
+    fill = "#c8e8f1",
+    color = NA
+  ) +
+  geom_textsf(
+    data = cnt2,
+    aes(
+      linecolor = lc,
+      label = ll
+    ),
+    color = "#458894",
+    size = 8,
+    family = "Liberation Mono"
+  ) +
+  scale_color_identity() +
+  facet_wrap(~lc) +
+  theme_void() +
+  theme(strip.text = element_blank())
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+```
+
+</details>
+
+<img src="man/figures/README-plot-3-1.png" style="width:100.0%" />
+
 ## Roadmap
 
     centerline 📦
@@ -200,9 +334,9 @@ plot(points[2, ], col = "green4",  add = T)
     │   ├── When we do know starting and ending points (e.g., landslides) ✅
     │   │   ├── centerline::cnt_skeleton ✅
     │   │   └── centerline::cnt_path ✅
-    │   └── When we do NOT have points (e.g., lakes) 🔲
+    │   └── When we do NOT have points (e.g., lakes) ✅
     │       ├── centerline::cnt_skeleton ✅
-    │       └── centerline::cnt_path_guess 🔲
+    │       └── centerline::cnt_path_guess ✅
     ├── Linear objects (e.g., roads or rivers)  🔲
     └── Collapse parallel lines to centerline 🔲
 

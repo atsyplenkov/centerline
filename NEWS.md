@@ -1,9 +1,9 @@
-centerline 0.0.1 (2024-03-08)
+centerline 0.0.1 (2024-03-16)
 =========================
 
 ### NEW FEATURES
   
-  * New function added `cnt_path_guess` which returns the longest centerline based on skeleton only
+  * New function added `cnt_path_guess` which returns the longest centerline based on polygon only
 
 ### UPDATES
 

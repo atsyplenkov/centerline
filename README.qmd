@@ -1,5 +1,7 @@
 ---
 format: gfm
+editor_options: 
+  chunk_output_type: console
 ---
 
 <!-- README.md is generated from README.qmd. Please edit that file -->
@@ -12,6 +14,9 @@ knitr::opts_chunk$set(
   out.width = "100%", 
   dpi = 1000
 )
+
+requireNamespace("geomtextpath", quietly = TRUE)
+requireNamespace("smoothr", quietly = TRUE)
 ```
 
 # centerline
@@ -185,6 +190,73 @@ plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
 ```
+And what if we don't know the starting and ending locations? What if we just want to place our label accurately in the middle of our polygon? In this case, one may find the `cnt_path_guess` function useful. It returns the line connecting the most distant points, i.e., the polygon's length. Such an approach is used in limnology for measuring [lake lengths](https://www.lakescientist.com/lake-shape/), for example.
+
+```{r}
+#| label: "Lake labelling"
+#| warning: false
+#| message: false
+library(sf)
+
+lake <- 
+  st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "lake",
+    quiet = T
+  ) |> 
+  st_cast("POLYGON")
+
+lake_centerline <- 
+  cnt_path_guess(lake, keep = 1)
+
+```
+
+```{r}
+#| label: plot-3
+#| code-fold: true
+#| code-summary: "Plot's code"
+library(ggplot2)
+library(geomtextpath)
+library(smoothr)
+
+lake_centerline_s <- 
+  lake_centerline |> 
+  st_union() |> 
+  st_line_merge() |> 
+  st_simplify(dTolerance = 150)  |> 
+  smooth("chaikin")
+
+cnt2 <- 
+  rbind(
+    st_as_sf(lake_centerline_s),
+    st_as_sf(lake_centerline_s)
+  )
+
+cnt2$lc <- c("black", NA_character_)
+cnt2$ll <- c("", lake$name)
+
+ggplot() +
+  geom_sf(
+    data = lake,
+    fill = "#c8e8f1",
+    color = NA
+  ) +
+  geom_textsf(
+    data = cnt2,
+    aes(
+      linecolor = lc,
+      label = ll
+    ),
+    color = "#458894",
+    size = 8,
+    family = "Liberation Mono"
+  ) +
+  scale_color_identity() +
+  facet_wrap(~lc) +
+  theme_void() +
+  theme(strip.text = element_blank())
+```
+
 
 ## Roadmap
 ```
@@ -193,9 +265,9 @@ centerline 📦
 │   ├── When we do know starting and ending points (e.g., landslides) ✅
 │   │   ├── centerline::cnt_skeleton ✅
 │   │   └── centerline::cnt_path ✅
-│   └── When we do NOT have points (e.g., lakes) 🔲
+│   └── When we do NOT have points (e.g., lakes) ✅
 │       ├── centerline::cnt_skeleton ✅
-│       └── centerline::cnt_path_guess 🔲
+│       └── centerline::cnt_path_guess ✅
 ├── Linear objects (e.g., roads or rivers)  🔲
 └── Collapse parallel lines to centerline 🔲
 ```
