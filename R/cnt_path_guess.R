@@ -41,7 +41,6 @@
 #'     add = TRUE
 #'   )
 #'
-#'
 cnt_path_guess <-
   function(input,
            skeleton = NULL,
@@ -86,10 +85,9 @@ cnt_path_guess.SpatVector <-
   }
 
 cnt_path_guess_terra <-
-  function(
-      input,
-      skeleton = NULL,
-      ...) {
+  function(input,
+           skeleton = NULL,
+           ...) {
     # Check if input is of class 'SpatVector' and 'polygons'
     stopifnot(check_terra_polygon(input))
 
@@ -218,10 +216,9 @@ cnt_path_guess_terra <-
   }
 
 cnt_path_guess_sf <-
-  function(
-    input,
-    skeleton = NULL,
-    ...) {
+  function(input,
+           skeleton = NULL,
+           ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
     stopifnot(check_sf_polygon(input))
 
@@ -239,7 +236,7 @@ cnt_path_guess_sf <-
     } else if (inherits(skeleton, "SpatVector")) {
       skeleton <-
         terra_to_sf(skeleton)
-    } else if (inherits(skeleton, "sf") | inherits(skeleton, "sfc")){
+    } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
       skeleton <- skeleton
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
@@ -352,10 +349,9 @@ cnt_path_guess_sf <-
 
 
 cnt_path_guess_sfc <-
-  function(
-    input,
-    skeleton = NULL,
-    ...) {
+  function(input,
+           skeleton = NULL,
+           ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
     stopifnot(check_sf_polygon(input))
 
@@ -373,7 +369,7 @@ cnt_path_guess_sfc <-
     } else if (inherits(skeleton, "SpatVector")) {
       skeleton <-
         terra_to_sf(skeleton)
-    } else if (inherits(skeleton, "sf") | inherits(skeleton, "sfc")){
+    } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
       skeleton <- skeleton
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
@@ -384,7 +380,7 @@ cnt_path_guess_sfc <-
     # Convert skeleton to sfnetworks
     pol_network <-
       skeleton |>
-      sfnetworks::as_sfnetwork(directed = F)
+      sfnetworks::as_sfnetwork(directed = FALSE)
 
     # Find the most distant nodes from the polygon center
     end_node <-
