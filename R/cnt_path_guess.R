@@ -65,7 +65,7 @@ cnt_path_guess.sfc <-
   function(input,
            skeleton = NULL,
            ...) {
-    cnt_path_guess_sfc(
+    cnt_path_guess_sf(
       input = input,
       skeleton = skeleton,
       ...
@@ -94,14 +94,13 @@ cnt_path_guess_terra <-
     # Save CRS
     crs <- terra::crs(input)
 
+    input <-
+      terra_to_sf(input)
+
     # Transform to GEOS geometry
     input_geos <-
       input |>
-      terra::geom(wkt = TRUE) |>
       geos::as_geos_geometry()
-
-    input <-
-      terra_to_sf(input)
 
     if (base::is.null(skeleton)) {
       skeleton <-
@@ -113,29 +112,25 @@ cnt_path_guess_terra <-
 
     # Convert skeleton to sfnetworks
     pol_network <-
-      skeleton |>
-      sfnetworks::as_sfnetwork(directed = FALSE)
+      sfnetworks::as_sfnetwork(
+        x = skeleton,
+        directed = FALSE,
+        length_as_weight = TRUE,
+        edges_as_lines = TRUE
+      )
 
-    # Find the most distant nodes from the polygon center
-    end_node <-
+    # Convert sfnetworks to igraph
+    pol_graph <-
       pol_network |>
-      sfnetworks::activate("nodes") |>
-      dplyr::mutate(cc = tidygraph::centrality_closeness()) |>
-      dplyr::filter(cc == base::min(cc)) |>
-      # Keep only one point
-      sf::st_as_sf() |>
-      utils::head(n = 1)
+      igraph::as.igraph()
 
-    # Find main points of the polygon
-    # main_points <-
-    #   input |>
-    #   rmapshaper::ms_simplify(
-    #     keep = 0.01,
-    #     method = "dp",
-    #     keep_shapes = T
-    #   ) |>
-    #   sf::st_cast("POINT")
+    # Activate network edges
+    pol_edges <-
+      pol_network |>
+      sfnetworks::activate("edges")
 
+    # Find main points of the polygon by
+    # simplifying it
     perimeter_length <-
       geos::geos_length(input_geos)
 
@@ -153,63 +148,51 @@ cnt_path_guess_terra <-
         tolerance = point_density / 0.1
       ) |>
       geos::geos_unique_points() |>
-      sf::st_as_sf() |>
-      sf::st_cast("POINT")
+      geos::geos_unnest(keep_multi = FALSE)
+
 
     # Find closest nodes to the above found points
+    sk_geos <-
+      geos::as_geos_geometry(skeleton) |>
+      geos::geos_strtree()
+
     closest_points <-
-      main_points |>
-      sf::st_nearest_feature(pol_network, check_crs = FALSE)
+      geos::geos_nearest(main_points, sk_geos)
 
+    # Find the most distant from center point
     closest_end_points <-
-      end_node |>
-      sf::st_nearest_feature(pol_network, check_crs = FALSE)
-
-    # Estimate distance between key points and end point
-    net <-
-      pol_network |>
-      sfnetworks::activate("edges") |>
-      dplyr::mutate(weight = sfnetworks::edge_length())
+      which.min(igraph::closeness(pol_graph))
 
     paths <-
       base::suppressWarnings(
         sfnetworks::st_network_paths(
-          net,
-          to = closest_points,
-          from = base::rep(
-            closest_end_points,
-            base::length(closest_points)
-          ),
+          pol_network,
+          to = closest_points[closest_points != closest_end_points],
+          from = closest_end_points,
           weights = "weight"
         )
       )
 
-    # Remove paths of zero length
-    true_paths <-
-      paths$edge_paths[base::sapply(paths$edge_paths, length) > 0]
-
-    # Transform paths to sf objects
-    true_paths_sf <-
-      true_paths |>
+    # Transform paths to GEOS object
+    true_paths_geos <-
+      paths$edge_paths |>
       base::lapply(function(.x) {
-        dplyr::slice(sfnetworks::activate(net, "edges"), .x)
+        as.data.frame(pol_edges)[.x, ]
       }) |>
-      base::lapply(sf::st_as_sf)
+      base::lapply(geos::as_geos_geometry)
 
     # Find total lengths of an object
     paths_length <-
       base::sapply(
-        true_paths_sf,
+        true_paths_geos,
         function(i) {
-          geos::as_geos_geometry(i) |>
-            geos::geos_length() |>
+          geos::geos_length(i) |>
             base::sum()
         }
       )
 
     # Return the longest path
-    true_paths_sf[[base::which.max(paths_length)]] |>
-      geos::as_geos_geometry() |>
+    true_paths_geos[[base::which.max(paths_length)]] |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       wk::as_wkt() |>
@@ -248,29 +231,25 @@ cnt_path_guess_sf <-
 
     # Convert skeleton to sfnetworks
     pol_network <-
-      skeleton |>
-      sfnetworks::as_sfnetwork(directed = FALSE)
+      sfnetworks::as_sfnetwork(
+        x = skeleton,
+        directed = FALSE,
+        length_as_weight = TRUE,
+        edges_as_lines = TRUE
+      )
 
-    # Find the most distant nodes from the polygon center
-    end_node <-
+    # Convert sfnetworks to igraph
+    pol_graph <-
       pol_network |>
-      sfnetworks::activate("nodes") |>
-      dplyr::mutate(cc = tidygraph::centrality_closeness()) |>
-      dplyr::filter(cc == base::min(cc)) |>
-      # Keep only one point
-      sf::st_as_sf() |>
-      utils::head(n = 1)
+      igraph::as.igraph()
 
-    # Find main points of the polygon
-    # main_points <-
-    #   input |>
-    #   rmapshaper::ms_simplify(
-    #     keep = 0.01,
-    #     method = "dp",
-    #     keep_shapes = T
-    #   ) |>
-    #   sf::st_cast("POINT")
+    # Activate network edges
+    pol_edges <-
+      pol_network |>
+      sfnetworks::activate("edges")
 
+    # Find main points of the polygon by
+    # simplifying it
     perimeter_length <-
       geos::geos_length(input_geos)
 
@@ -288,196 +267,49 @@ cnt_path_guess_sf <-
         tolerance = point_density / 0.1
       ) |>
       geos::geos_unique_points() |>
-      sf::st_as_sf() |>
-      sf::st_cast("POINT")
+      geos::geos_unnest(keep_multi = FALSE)
+
 
     # Find closest nodes to the above found points
+    sk_geos <-
+      geos::as_geos_geometry(skeleton) |>
+      geos::geos_strtree()
+
     closest_points <-
-      main_points |>
-      sf::st_nearest_feature(pol_network, check_crs = FALSE)
+      geos::geos_nearest(main_points, sk_geos)
 
     closest_end_points <-
-      end_node |>
-      sf::st_nearest_feature(pol_network, check_crs = FALSE)
-
-    # Estimate distance between key points and end point
-    net <-
-      pol_network |>
-      sfnetworks::activate("edges") |>
-      dplyr::mutate(weight = sfnetworks::edge_length())
+      which.min(igraph::closeness(pol_graph))
 
     paths <-
       base::suppressWarnings(
         sfnetworks::st_network_paths(
-          net,
-          to = closest_points,
-          from = base::rep(
-            closest_end_points,
-            base::length(closest_points)
-          ),
+          pol_network,
+          to = closest_points[closest_points != closest_end_points],
+          from = closest_end_points,
           weights = "weight"
         )
       )
 
-    # Remove paths of zero length
-    true_paths <-
-      paths$edge_paths[base::sapply(paths$edge_paths, length) > 0]
-
     # Transform paths to sf objects
-    true_paths_sf <-
-      true_paths |>
+    true_paths_geos <-
+      paths$edge_paths |>
       base::lapply(function(.x) {
-        dplyr::slice(sfnetworks::activate(net, "edges"), .x)
+        as.data.frame(pol_edges)[.x, ]
       }) |>
-      base::lapply(sf::st_as_sf)
+      base::lapply(geos::as_geos_geometry)
 
     # Find total lengths of an object
     paths_length <-
       base::sapply(
-        true_paths_sf,
+        true_paths_geos,
         function(i) {
-          geos::as_geos_geometry(i) |>
-            geos::geos_length() |>
+          geos::geos_length(i) |>
             base::sum()
         }
       )
 
-    true_paths_sf[[base::which.max(paths_length)]] |>
-      geos::as_geos_geometry() |>
-      geos::geos_make_collection() |>
-      geos::geos_line_merge() |>
-      sf::st_as_sf() |>
-      sf::st_set_crs(crs)
-  }
-
-
-cnt_path_guess_sfc <-
-  function(input,
-           skeleton = NULL,
-           ...) {
-    # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
-    stopifnot(check_sf_polygon(input))
-
-    # Save CRS
-    crs <- sf::st_crs(input)
-
-    # Transform to GEOS geometry
-    input_geos <-
-      input |>
-      geos::as_geos_geometry()
-
-    if (base::is.null(skeleton)) {
-      skeleton <-
-        cnt_skeleton(input = input, ...)
-    } else if (inherits(skeleton, "SpatVector")) {
-      skeleton <-
-        terra_to_sf(skeleton)
-    } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
-      skeleton <- skeleton
-    } else {
-      warning("skeleton is not of supported class, rebuilding it...")
-      skeleton <-
-        cnt_skeleton(input = input, ...)
-    }
-
-    # Convert skeleton to sfnetworks
-    pol_network <-
-      skeleton |>
-      sfnetworks::as_sfnetwork(directed = FALSE)
-
-    # Find the most distant nodes from the polygon center
-    end_node <-
-      pol_network |>
-      sfnetworks::activate("nodes") |>
-      dplyr::mutate(cc = tidygraph::centrality_closeness()) |>
-      dplyr::filter(cc == base::min(cc)) |>
-      # Keep only one point
-      sf::st_as_sf() |>
-      utils::head(n = 1)
-
-    # Find main points of the polygon
-    # main_points <-
-    #   input |>
-    #   rmapshaper::ms_simplify(
-    #     keep = 0.01,
-    #     method = "dp",
-    #     keep_shapes = T
-    #   ) |>
-    #   sf::st_cast("POINT")
-
-    perimeter_length <-
-      geos::geos_length(input_geos)
-
-    point_count <-
-      input_geos |>
-      geos::geos_unique_points() |>
-      geos::geos_num_coordinates()
-
-    point_density <-
-      perimeter_length / point_count
-
-    main_points <-
-      geos::geos_simplify_preserve_topology(
-        input_geos,
-        tolerance = point_density / 0.1
-      ) |>
-      geos::geos_unique_points() |>
-      sf::st_as_sf() |>
-      sf::st_cast("POINT")
-
-    # Find closest nodes to the above found points
-    closest_points <-
-      main_points |>
-      sf::st_nearest_feature(pol_network, check_crs = FALSE)
-
-    closest_end_points <-
-      end_node |>
-      sf::st_nearest_feature(pol_network, check_crs = FALSE)
-
-    # Estimate distance between key points and end point
-    net <-
-      pol_network |>
-      sfnetworks::activate("edges") |>
-      dplyr::mutate(weight = sfnetworks::edge_length())
-
-    paths <-
-      base::suppressWarnings(
-        sfnetworks::st_network_paths(
-          net,
-          to = closest_points,
-          from = base::rep(
-            closest_end_points,
-            base::length(closest_points)
-          ),
-          weights = "weight"
-        )
-      )
-
-    # Remove paths of zero length
-    true_paths <-
-      paths$edge_paths[base::sapply(paths$edge_paths, length) > 0]
-
-    # Transform paths to sf objects
-    true_paths_sf <-
-      true_paths |>
-      base::lapply(function(.x) {
-        dplyr::slice(sfnetworks::activate(net, "edges"), .x)
-      }) |>
-      base::lapply(sf::st_as_sf)
-
-    # Find total lengths of an object
-    paths_length <-
-      base::sapply(
-        true_paths_sf,
-        function(i) {
-          geos::as_geos_geometry(i) |>
-            geos::geos_length() |>
-            base::sum()
-        }
-      )
-
-    true_paths_sf[[base::which.max(paths_length)]] |>
-      geos::as_geos_geometry() |>
+    true_paths_geos[[base::which.max(paths_length)]] |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       sf::st_as_sf() |>
