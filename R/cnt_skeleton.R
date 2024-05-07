@@ -29,7 +29,8 @@
 #'
 #' polygon <-
 #'   sf::st_read(system.file("extdata/example.gpkg", package = "centerline"),
-#'     layer = "polygon")
+#'     layer = "polygon"
+#'   )
 #'
 #' plot(polygon)
 #'
@@ -100,11 +101,8 @@ cnt_skeleton_sfc <-
 
     # Simplify or densify or do nothing
     if (keep == 1) {
-
       pol_geos <- input_geos
-
-    } else if (keep < 1 & keep >= 0.05) {
-
+    } else if (keep < 1 && keep >= 0.05) {
       pol_geos <-
         rmapshaper::ms_simplify(
           input,
@@ -113,9 +111,7 @@ cnt_skeleton_sfc <-
           keep_shapes = TRUE
         ) |>
         geos::as_geos_geometry()
-
     } else if (keep < 0.05) {
-
       pol_geos <-
         rmapshaper::ms_simplify(
           input,
@@ -124,9 +120,7 @@ cnt_skeleton_sfc <-
           keep_shapes = TRUE
         ) |>
         geos::as_geos_geometry()
-
     } else {
-
       perimeter_length <-
         geos::geos_length(input_geos)
 
@@ -143,7 +137,6 @@ cnt_skeleton_sfc <-
           input_geos,
           tolerance = point_density / keep
         )
-
     }
 
     # Find polygon skeleton
@@ -151,7 +144,7 @@ cnt_skeleton_sfc <-
       pol_geos |>
       geos::geos_voronoi_edges() |>
       geos::geos_intersection(pol_geos) |>
-      geos::geos_unnest(keep_multi = F)
+      geos::geos_unnest(keep_multi = FALSE)
 
     # Transform back to sf
     pol_skeleton_crs <-
@@ -178,11 +171,8 @@ cnt_skeleton_sf <-
 
     # Simplify or densify or do nothing
     if (keep == 1) {
-
       pol_geos <- input_geos
-
-    } else if (keep < 1 & keep >= 0.05) {
-
+    } else if (keep < 1 && keep >= 0.05) {
       pol_geos <-
         rmapshaper::ms_simplify(
           input,
@@ -191,9 +181,7 @@ cnt_skeleton_sf <-
           keep_shapes = TRUE
         ) |>
         geos::as_geos_geometry()
-
     } else if (keep < 0.05) {
-
       pol_geos <-
         rmapshaper::ms_simplify(
           input,
@@ -202,9 +190,7 @@ cnt_skeleton_sf <-
           keep_shapes = TRUE
         ) |>
         geos::as_geos_geometry()
-
     } else {
-
       perimeter_length <-
         geos::geos_length(input_geos)
 
@@ -221,7 +207,6 @@ cnt_skeleton_sf <-
           input_geos,
           tolerance = point_density / keep
         )
-
     }
 
     # Find polygon skeleton
@@ -229,13 +214,13 @@ cnt_skeleton_sf <-
       pol_geos |>
       geos::geos_voronoi_edges() |>
       geos::geos_intersection(pol_geos) |>
-      geos::geos_unnest(keep_multi = F)
+      geos::geos_unnest(keep_multi = FALSE)
 
     # Transform back to sf
     pol_skeleton_crs <-
       pol_skeleton |>
-      sf::st_as_sf(crs = crs) ##|>
-      # cbind(sf::st_drop_geometry(input))
+      sf::st_as_sf(crs = crs) ## |>
+    # cbind(sf::st_drop_geometry(input))
 
     return(pol_skeleton_crs)
   }
@@ -243,7 +228,6 @@ cnt_skeleton_sf <-
 cnt_skeleton_terra <-
   function(input,
            keep = 0.1) {
-
     # Check if input is of class 'SpatVector' and 'polygons'
     stopifnot(check_terra_polygon(input))
 
@@ -254,16 +238,13 @@ cnt_skeleton_terra <-
     # Transform to GEOS geometry
     input_geos <-
       input |>
-      terra::geom(wkt = T) |>
+      terra::geom(wkt = TRUE) |>
       geos::as_geos_geometry()
 
     # Simplify or densify or do nothing
     if (keep == 1) {
-
       pol_geos <- input_geos
-
-    } else if (keep < 1 & keep >= 0.05) {
-
+    } else if (keep < 1 && keep >= 0.05) {
       pol_geos <-
         rmapshaper::ms_simplify(
           sf::st_as_sf(input_geos),
@@ -272,9 +253,7 @@ cnt_skeleton_terra <-
           keep_shapes = TRUE
         ) |>
         geos::as_geos_geometry()
-
     } else if (keep < 0.05) {
-
       pol_geos <-
         rmapshaper::ms_simplify(
           sf::st_as_sf(input_geos),
@@ -283,9 +262,7 @@ cnt_skeleton_terra <-
           keep_shapes = TRUE
         ) |>
         geos::as_geos_geometry()
-
     } else {
-
       perimeter_length <-
         geos::geos_length(input_geos)
 
@@ -302,7 +279,6 @@ cnt_skeleton_terra <-
           input_geos,
           tolerance = point_density / keep
         )
-
     }
 
     # Find skeleton
@@ -310,7 +286,7 @@ cnt_skeleton_terra <-
       pol_geos |>
       geos::geos_voronoi_edges() |>
       geos::geos_intersection(pol_geos) |>
-      geos::geos_unnest(keep_multi = F)
+      geos::geos_unnest(keep_multi = FALSE)
 
     # Transform back to SpatVect
     pol_skeleton_crs <-
@@ -318,7 +294,7 @@ cnt_skeleton_terra <-
       wk::as_wkt() |>
       as.character() |>
       terra::vect(crs = crs)
-      # cbind(terra::as.data.frame(input))
+    # cbind(terra::as.data.frame(input))
 
     return(pol_skeleton_crs)
   }

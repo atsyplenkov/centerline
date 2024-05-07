@@ -1,8 +1,15 @@
+centerline 0.0.2 (2024-05-07)
+=========================
+
+### BUG FIXES
+
+  * Now `cnt_path` family returns a one `LINESTRING`, not a collection of `LINESTRINGS`
+
 centerline 0.0.1 (2024-03-16)
 =========================
 
 ### NEW FEATURES
-  
+
   * New function added `cnt_path_guess` which returns the longest centerline based on polygon only
 
 ### UPDATES

@@ -108,4 +108,18 @@ test_that("cnt_path returns a list of correct class objects with LINESTRING geom
       sf::st_geometry_type(x) == "LINESTRING"
     })
   ))
+
+  # Simple geometry
+  expect_true(all(
+    sapply(result, function(x) {
+      sf::st_is_simple(x)
+    })
+  ))
+
+  # One line per centerline
+  expect_true(all(
+    sapply(result, function(x) {
+      nrow(x) == 1L
+    })
+  ))
 })

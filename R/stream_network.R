@@ -2,7 +2,6 @@
 
 # DRAFT !!!
 
-# end
 #
 # lg <-
 #   cnt_skeleton(lake, keep = 0.1) |>
@@ -62,7 +61,7 @@
 #
 # }
 #
-# terra::plot(terra::vect(lake))
+# terra::plot(terra::vect(texas))
 # input |>
 #   terra::vect() |>
 #   terra::plot("order", add = T)

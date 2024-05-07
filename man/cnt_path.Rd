@@ -53,11 +53,13 @@ library(centerline)
 # Load Polygon and points data
 polygon <-
   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
-  layer = "polygon")
+    layer = "polygon"
+  )
 
 points <-
   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
-  layer = "polygon_points")
+    layer = "polygon_points"
+  )
 
 # Find polygon's skeleton
 pol_skeleton <-
@@ -74,7 +76,7 @@ pol_path <-
 # Plot
 plot(polygon)
 plot(pol_skeleton, col = "blue", add = T)
-plot(points[1:2, ], col = "red",  add = T)
+plot(points[1:2, ], col = "red", add = T)
 plot(pol_path[[1]], lwd = 3, add = T)
 }
 

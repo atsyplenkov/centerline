@@ -1,4 +1,5 @@
 
+
 <!-- README.md is generated from README.qmd. Please edit that file -->
 
 # centerline
@@ -52,31 +53,31 @@ which can produce more smooth results.
 ``` r
 library(centerline)
 library(terra)
-#> terra 1.7.65
+#> terra 1.7.71
 
 # Load Polygon Of Interest (POI)
-polygon <- 
+polygon <-
   terra::vect(
     system.file(
       "extdata/example.gpkg", package = "centerline"
-    ), 
+    ),
     layer = "polygon"
   )
 
 # Find POI's skeleton
-pol_skeleton <- 
-  cnt_skeleton(polygon, keep = 1) 
+pol_skeleton <-
+  cnt_skeleton(polygon, keep = 1)
 
 # Simplified POI's skeleton
-pol_skeleton_simplify <- 
-  cnt_skeleton(polygon, keep = .1) 
+pol_skeleton_simplify <-
+  cnt_skeleton(polygon, keep = .1)
 
 # Densified POI's skeleton
-pol_skeleton_densify <- 
-  cnt_skeleton(polygon, keep = 1.5) 
+pol_skeleton_densify <-
+  cnt_skeleton(polygon, keep = 1.5)
 ```
 
-<details>
+<details class="code-fold">
 <summary>Plot’s code</summary>
 
 ``` r
@@ -123,7 +124,7 @@ it could be the landslide initiation point and landslide terminus.
 
 ``` r
 # Load points data
-points <- 
+points <-
   terra::vect(
     system.file(
       "extdata/example.gpkg", package = "centerline"
@@ -157,15 +158,15 @@ pol_path_dens <-
   )
 ```
 
-<details>
+<details class="code-fold">
 <summary>Plot’s code</summary>
 
 ``` r
 # Plot
-par(mfrow = c(1, 3)) 
+par(mfrow = c(1, 3))
 
 # Original
-plot(polygon, border = "grey20", 
+plot(polygon, border = "grey20",
      main = paste0("Original path (L = ",
                    round(terra::perim(pol_path[[1]]), 2), " m)"))
 plot(pol_path[[1]], lwd = 3, add = T)
@@ -173,7 +174,7 @@ plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
 # Simplified
-plot(polygon, border = "grey20", 
+plot(polygon, border = "grey20",
      main = paste0("Simplified path (L = ",
                    round(terra::perim(pol_path_simplify[[1]]), 2), " m)"))
 plot(pol_path_simplify[[1]], lwd = 3, add = T)
@@ -181,7 +182,7 @@ plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
 # Densified
-plot(polygon, border = "grey20", 
+plot(polygon, border = "grey20",
      main = paste0("Densified path (L = ",
                    round(terra::perim(pol_path_dens[[1]]), 2), " m)"))
 plot(pol_path_dens[[1]], lwd = 3, add = T)
@@ -203,27 +204,25 @@ lengths](https://www.lakescientist.com/lake-shape/), for example.
 ``` r
 library(sf)
 
-lake <- 
+lake <-
   st_read(
     system.file("extdata/example.gpkg", package = "centerline"),
     layer = "lake",
     quiet = T
-  ) |> 
+  ) |>
   st_cast("POLYGON")
 
-lake_centerline <- 
+lake_centerline <-
   cnt_path_guess(lake, keep = 1)
 ```
 
-<details>
+<details class="code-fold">
 <summary>Plot’s code</summary>
 
 ``` r
 library(ggplot2)
-#> Warning: package 'ggplot2' was built under R version 4.3.3
 library(geomtextpath)
 library(smoothr)
-#> Warning: package 'smoothr' was built under R version 4.3.3
 #> 
 #> Attaching package: 'smoothr'
 #> The following object is masked from 'package:terra':
@@ -233,14 +232,12 @@ library(smoothr)
 #> 
 #>     smooth
 
-lake_centerline_s <- 
-  lake_centerline |> 
-  st_union() |> 
-  st_line_merge() |> 
-  st_simplify(dTolerance = 150)  |> 
+lake_centerline_s <-
+  lake_centerline |>
+  st_simplify(dTolerance = 150)  |>
   smooth("chaikin")
 
-cnt2 <- 
+cnt2 <-
   rbind(
     st_as_sf(lake_centerline_s),
     st_as_sf(lake_centerline_s)
@@ -262,8 +259,7 @@ ggplot() +
       label = ll
     ),
     color = "#458894",
-    size = 8,
-    family = "Liberation Mono"
+    size = 8
   ) +
   scale_color_identity() +
   facet_wrap(~lc) +
@@ -273,52 +269,36 @@ ggplot() +
 #> font family not found in Windows font database
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
-
 #> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
 #> font family not found in Windows font database
 ```

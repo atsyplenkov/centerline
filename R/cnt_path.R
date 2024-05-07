@@ -41,11 +41,13 @@
 #' # Load Polygon and points data
 #' polygon <-
 #'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
-#'   layer = "polygon")
+#'     layer = "polygon"
+#'   )
 #'
 #' points <-
 #'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
-#'   layer = "polygon_points")
+#'     layer = "polygon_points"
+#'   )
 #'
 #' # Find polygon's skeleton
 #' pol_skeleton <-
@@ -62,7 +64,7 @@
 #' # Plot
 #' plot(polygon)
 #' plot(pol_skeleton, col = "blue", add = T)
-#' plot(points[1:2, ], col = "red",  add = T)
+#' plot(points[1:2, ], col = "red", add = T)
 #' plot(pol_path[[1]], lwd = 3, add = T)
 #' }
 #'
@@ -111,10 +113,9 @@ cnt_path.SpatVector <-
 
 
 cnt_path_terra <-
-  function(
-      skeleton,
-      start_point,
-      end_point) {
+  function(skeleton,
+           start_point,
+           end_point) {
     # Check if input is of class 'SpatVector' and 'lines'
     stopifnot(check_terra_lines(skeleton))
 
@@ -122,7 +123,7 @@ cnt_path_terra <-
 
     # Transform to sf objects
     skeleton <-
-     terra_to_sf(skeleton)
+      terra_to_sf(skeleton)
     start_point <-
       terra_to_sf(start_point)
     end_point <-
@@ -131,7 +132,7 @@ cnt_path_terra <-
     # Transform to sfnetwork
     pol_network <-
       skeleton |>
-      sfnetworks::as_sfnetwork(directed = F)
+      sfnetworks::as_sfnetwork(directed = FALSE)
 
     # Find indices of nearest nodes for start ...
     start_nodes <-
@@ -163,8 +164,10 @@ cnt_path_terra <-
 
     # Convert to GEOS geometries and create a GEOS collection
     lines_list_geos <-
-      lapply(paths$edge_paths,
-             function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)) |>
+      lapply(
+        paths$edge_paths,
+        function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)
+      ) |>
       lapply(sf::st_as_sf) |>
       lapply(geos::as_geos_geometry) |>
       lapply(geos::geos_make_collection) |>
@@ -183,16 +186,18 @@ cnt_path_terra <-
       lines_list_sf <-
         lines_list_geos |>
         lapply(geos::geos_reverse) |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge) |>
         lapply(wk::as_wkt) |>
         lapply(as.character) |>
-        # lapply(sf::st_as_sf) |>
         lapply(terra::vect, crs = crs)
     } else {
       lines_list_sf <-
         lines_list_geos |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge) |>
         lapply(wk::as_wkt) |>
         lapply(as.character) |>
-        # lapply(sf::st_as_sf) |>
         lapply(terra::vect, crs = crs)
     }
 
@@ -201,17 +206,16 @@ cnt_path_terra <-
   }
 
 cnt_path_sf <-
-  function(
-      skeleton,
-      start_point,
-      end_point) {
+  function(skeleton,
+           start_point,
+           end_point) {
     # Check if input is of class 'sf' and 'LINESTRING'
     stopifnot(check_sf_lines(skeleton))
 
     # Transform to sfnetwork
     pol_network <-
       skeleton |>
-      sfnetworks::as_sfnetwork(directed = F)
+      sfnetworks::as_sfnetwork(directed = FALSE)
 
     # Find indices of nearest nodes for start ...
     start_nodes <-
@@ -243,8 +247,10 @@ cnt_path_sf <-
 
     # Convert to GEOS geometries and create a GEOS collection
     lines_list_geos <-
-      lapply(paths$edge_paths,
-             function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)) |>
+      lapply(
+        paths$edge_paths,
+        function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)
+      ) |>
       lapply(sf::st_as_sf) |>
       lapply(geos::as_geos_geometry) |>
       lapply(geos::geos_make_collection) |>
@@ -263,13 +269,17 @@ cnt_path_sf <-
       lines_list_sf <-
         lines_list_geos |>
         lapply(geos::geos_reverse) |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge) |>
         lapply(sf::st_as_sf)
     } else {
       lines_list_sf <-
         lines_list_geos |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge) |>
         lapply(sf::st_as_sf)
     }
 
-    return(lines_list_sf)
+    lines_list_sf
     # dplyr::bind_rows(lines_list_sf, .id = "cnt_id")
   }

@@ -207,8 +207,10 @@ cnt_path_guess_terra <-
         }
       )
 
+    # Return the longest path
     true_paths_sf[[base::which.max(paths_length)]] |>
       geos::as_geos_geometry() |>
+      geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       wk::as_wkt() |>
       base::as.character() |>
@@ -342,6 +344,7 @@ cnt_path_guess_sf <-
 
     true_paths_sf[[base::which.max(paths_length)]] |>
       geos::as_geos_geometry() |>
+      geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       sf::st_as_sf() |>
       sf::st_set_crs(crs)
@@ -475,6 +478,7 @@ cnt_path_guess_sfc <-
 
     true_paths_sf[[base::which.max(paths_length)]] |>
       geos::as_geos_geometry() |>
+      geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       sf::st_as_sf() |>
       sf::st_set_crs(crs)
