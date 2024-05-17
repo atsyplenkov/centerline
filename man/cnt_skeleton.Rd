@@ -4,12 +4,12 @@
 \alias{cnt_skeleton}
 \title{Create a skeleton of a closed polygon object}
 \usage{
-cnt_skeleton(input, keep = 0.1)
+cnt_skeleton(input, keep = 0.5)
 }
 \arguments{
 \item{input}{\code{sf}, \code{sfc} or \code{SpatVector} polygons object}
 
-\item{keep}{numeric, proportion of points to retain (0.05-Inf; default 1).
+\item{keep}{numeric, proportion of points to retain (0.05-Inf; default 0.1).
 See Details.}
 }
 \value{
@@ -23,10 +23,13 @@ Create a skeleton of a closed polygon object
 \itemize{
 \item If \code{keep} equals 1 (default), no transformation will occur. The
 function will use the original geometry to find the skeleton.
-\item If the keep parameter is below 1, then the \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}}
-function will be used with Douglas-Peuker algorithm. So the original input
+\item If the \code{keep} parameter is below 1, then the \code{\link[geos:geos_centroid]{geos::geos_simplify()}}
+function will be used. So the original input
 geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
+The current realisation of simplification is similar (but not identical) to
+\code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} one with Douglas-Peuker algorithm. However,
+due to \code{geos} superpower, 50x times faster.
 \item If the \code{keep} is above 1, then the densification
 algorithm is applied using the \code{\link[geos:geos_centroid]{geos::geos_densify()}} function. This may
 produce a very large object if keep is set more than 2. However, the

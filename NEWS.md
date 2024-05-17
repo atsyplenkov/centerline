@@ -1,8 +1,18 @@
+centerline 0.0.3 (2024-05-17)
+=========================
+
+### UPDATES
+
+  * Got rid of the `rmapshaper` dependency. Similar performance achieved only with `geos` in the backend.
+  * Full `geos` support.
+  * More tests covering `cnt_skeleton` have been added.
+  * Transition from `SpatVector` to `geos_geometry` and vice versa now happens faster through the `wk` package, not through `sf` as before.
+
 centerline 0.0.2 (2024-05-07)
 =========================
 
 ### UPDATES
-  
+
   * `cnt_path_guess` performs 1.25 times faster due to a wiser usage of the `igraph` and `geos` packages. The `tidygraph` dependency has been removed.
   * Now, the `cnt_path` family returns one `LINESTRING`, not a collection of `LINESTRINGS`.
 

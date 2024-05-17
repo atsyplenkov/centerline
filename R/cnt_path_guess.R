@@ -105,9 +105,11 @@ cnt_path_guess_terra <-
     if (base::is.null(skeleton)) {
       skeleton <-
         cnt_skeleton(input = input, ...)
-    } else {
+    } else if (!inherits(skeleton, "SpatVector")) {
       skeleton <-
         terra_to_sf(skeleton)
+    } else {
+      skeleton <- skeleton
     }
 
     # Convert skeleton to sfnetworks

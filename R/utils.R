@@ -1,4 +1,4 @@
-# SF to Terra transformer
+# Terra to SF transformer
 terra_to_sf <-
   function(input) {
     spatial_data <-
@@ -16,6 +16,25 @@ terra_to_sf <-
         sf::st_set_crs(terra::crs(input)) |>
         cbind(terra::as.data.frame(spatial_data))
     }
+  }
+
+# Terra to GEOS transformer
+terra_to_geos <-
+  function(input) {
+    input |>
+      terra::geom(wkt = TRUE) |>
+      geos::as_geos_geometry(crs = sf::st_crs(input))
+  }
+
+# GEOS to terra transformer
+geos_to_terra <-
+  function(input) {
+    wk_input <- wk::as_wkt(input)
+
+    terra::vect(
+      as.character(wk_input),
+      crs = wk::wk_crs(wk_input)$wkt
+    )
   }
 
 # Polygon checks
@@ -83,6 +102,48 @@ check_terra_lines <- function(input) {
   # If checks pass
   return(TRUE)
 }
+
+# Fast simplification, similiar to mapshaper simplify
+geos_ms_simplify <-
+  function(geom,
+           keep) {
+    perimeter_length <-
+      geos::geos_length(geom)
+
+    point_count <-
+      geom |>
+      geos::geos_unique_points() |>
+      geos::geos_num_coordinates()
+
+    point_density <-
+      perimeter_length / point_count
+
+    geos::geos_simplify(
+      geom,
+      tolerance = point_density / (keep * 7)
+    )
+  }
+
+# Fast densification, similar behavior to mapshaper simplify
+geos_ms_densify <-
+  function(geom,
+           keep) {
+    perimeter_length <-
+      geos::geos_length(geom)
+
+    point_count <-
+      geom |>
+      geos::geos_unique_points() |>
+      geos::geos_num_coordinates()
+
+    point_density <-
+      perimeter_length / point_count
+
+    geos::geos_densify(
+      geom,
+      tolerance = point_density / (keep)
+    )
+  }
 
 # Straight skeleton
 # straight_skeleton <-

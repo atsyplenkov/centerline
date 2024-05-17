@@ -1,5 +1,4 @@
 
-
 <!-- README.md is generated from README.qmd. Please edit that file -->
 
 # centerline
@@ -20,9 +19,8 @@ commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline.png)
 The `centerline` R package simplifies the extraction of linear features
 from complex polygons, such as roads or rivers, by computing their
 centerlines (or median-axis) using Voronoi diagrams. It uses the
-super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) and
-[`rmapshaper`](http://andyteucher.ca/rmapshaper/index.html) libraries in
-the background.
+super-fast [`geos`](https://paleolimbot.github.io/geos/index.html)
+library in the background.
 
 ## Installation
 
@@ -44,11 +42,12 @@ pak::pak("atsyplenkov/centerline")
 At the heart of this package is the `cnt_skeleton` function, which
 efficiently computes the skeleton of closed 2D polygonal geometries. The
 function uses
-[`rmapshaper::ms_simplify()`](http://andyteucher.ca/rmapshaper/reference/ms_simplify.html)
+[`geos::geos_simplify`](https://paleolimbot.github.io/geos/reference/geos_centroid.html)
 by default to keep the most important nodes and reduce noise from the
 beginning. However, it has option to densify the amount of points using
 [`geos::geos_densify`](https://paleolimbot.github.io/geos/reference/geos_centroid.html),
-which can produce more smooth results.
+which can produce more smooth results. Otherwise, you can set the
+parameter `keep = 1` to work with the initial geometry.
 
 ``` r
 library(centerline)
@@ -265,42 +264,6 @@ ggplot() +
   facet_wrap(~lc) +
   theme_void() +
   theme(strip.text = element_blank())
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
 ```
 
 </details>
