@@ -16,7 +16,7 @@ test_that("cnt_path_guess handles sf and SpatVector inputs equivalently", {
     cnt_path_guess(polygon)
   result_spat <-
     cnt_path_guess(terra::vect(polygon))
-  # Compare results; this might involve converting one result to the other's format for direct comparison
+  # Compare results
   expect_equal(nrow(result_spat), nrow(result_sf))
 })
 
@@ -43,4 +43,29 @@ test_that("cnt_path_guess returns a list of correct class objects with LINESTRIN
       sf::st_geometry_type(x) == "LINESTRING"
     })
   ))
+})
+
+# Test simplification/densification
+test_that("Path guessing works with any keep parameter", {
+  polygon <-
+    sf::st_read(
+      system.file("extdata/example.gpkg", package = "centerline"),
+      layer = "shapes"
+    )
+  polygon$id <- seq_len(nrow(polygon))
+  polygon21 <- subset(polygon, id == 21)
+  polygon_path <- cnt_path_guess(polygon21, keep = 1.6)
+
+  # Test that all paths are created without errors
+  # With keep parameter varying from 0 to 2
+  test_list <-
+    lapply(seq(0, 2, by = 0.1), function(x) {
+      tryCatch(
+        cnt_path_guess(polygon21, keep = x),
+        error = \(e) NA
+      )
+    })
+
+  # Check that all paths are not NA
+  expect_true(all(!is.na(test_list)))
 })

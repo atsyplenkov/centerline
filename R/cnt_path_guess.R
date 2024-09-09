@@ -156,6 +156,11 @@ cnt_path_guess_terra <-
     # Find closest nodes to the above found points
     sk_geos <-
       geos::as_geos_geometry(skeleton) |>
+      geos::geos_unique_points() |> 
+      geos::geos_unnest(keep_multi = FALSE) |>
+      wk::as_wkt() |> 
+      base::unique() |> 
+      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |> 
       geos::geos_strtree()
 
     closest_points <-
@@ -271,10 +276,14 @@ cnt_path_guess_sf <-
       geos::geos_unique_points() |>
       geos::geos_unnest(keep_multi = FALSE)
 
-
     # Find closest nodes to the above found points
     sk_geos <-
       geos::as_geos_geometry(skeleton) |>
+      geos::geos_unique_points() |> 
+      geos::geos_unnest(keep_multi = FALSE) |>
+      wk::as_wkt() |> 
+      base::unique() |> 
+      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |> 
       geos::geos_strtree()
 
     closest_points <-
