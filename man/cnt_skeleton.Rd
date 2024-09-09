@@ -28,7 +28,7 @@ function will be used. So the original input
 geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
 The current realisation of simplification is similar (but not identical) to
-\code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} one with Douglas-Peuker algorithm. However,
+\code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm. However,
 due to \code{geos} superpower, 50x times faster.
 \item If the \code{keep} is above 1, then the densification
 algorithm is applied using the \code{\link[geos:geos_centroid]{geos::geos_densify()}} function. This may

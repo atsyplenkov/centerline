@@ -13,7 +13,7 @@
 #' geometry would be simplified, and the resulting skeleton will be cleaner but
 #' maybe more edgy.
 #' The current realisation of simplification is similar (but not identical) to
-#' [rmapshaper::ms_simplify()] one with Douglas-Peuker algorithm. However,
+#' `rmapshaper::ms_simplify()` one with Douglas-Peuker algorithm. However,
 #' due to \code{geos} superpower, 50x times faster.
 #'
 #' - If the \code{keep} is above 1, then the densification
