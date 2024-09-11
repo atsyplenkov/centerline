@@ -5,7 +5,8 @@ library(centerline)
 library(sfnetworks)
 
 test_that(
-  "cnt_path_guess handles sf, SpatVector and geos_geometry inputs equivalently",
+  "cnt_path_guess handles sf, SpatVector and geos_geometry
+  inputs equivalently",
   {
     polygon <-
       sf::st_read(
@@ -49,7 +50,8 @@ test_that(
 
 # Test Output Structure
 test_that(
-  "cnt_path_guess returns a list of correct class objects with LINESTRING geometry",
+  "cnt_path_guess returns a list of correct class objects
+  with LINESTRING geometry",
   {
     polygon <-
       sf::st_read(
@@ -62,16 +64,16 @@ test_that(
     result <- cnt_path_guess(polygon)
 
     expect_true(is.list(result))
-    expect_true(all(sapply(result, function(x) {
+    expect_true(all(vapply(result, function(x) {
       inherits(
         x, c("sf", "sfc", "SpatVector")
       )
-    })))
-    # Check for LINESTRING geometry; this check might need to be adjusted based on the object class
+    }, logical(1))))
+    # Check for LINESTRING geometry
     expect_true(all(
-      sapply(result, function(x) {
+      vapply(result, function(x) {
         sf::st_geometry_type(x) == "LINESTRING"
-      })
+      }, logical(1))
     ))
   }
 )

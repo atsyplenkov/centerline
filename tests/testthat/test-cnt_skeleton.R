@@ -49,17 +49,29 @@ test_that("'keep' parameter affects the output", {
   result_densified <- cnt_skeleton(polygon, keep = 1.1)
 
   num_points_simplified <-
-    sum(sapply(sf::st_geometry(result_simplified), function(x) {
-      length(x[[1]][[1]])
-    }))
+    sum(
+      vapply(
+        sf::st_geometry(result_simplified),
+        function(x) length(x[[1]][[1]]),
+        FUN.VALUE = integer(1)
+      )
+    )
   num_points_not_simplified <-
-    sum(sapply(sf::st_geometry(result_not_simplified), function(x) {
-      length(x[[1]][[1]])
-    }))
+    sum(
+      vapply(
+        sf::st_geometry(result_not_simplified),
+        function(x) length(x[[1]][[1]]),
+        FUN.VALUE = integer(1)
+      )
+    )
   num_points_densified <-
-    sum(sapply(sf::st_geometry(result_densified), function(x) {
-      length(x[[1]][[1]])
-    }))
+    sum(
+      vapply(
+        sf::st_geometry(result_densified),
+        function(x) length(x[[1]][[1]]),
+        FUN.VALUE = integer(1)
+      )
+    )
 
   expect_true(num_points_simplified < num_points_not_simplified)
   expect_true(num_points_not_simplified < num_points_densified)

@@ -117,7 +117,7 @@ test_that(
     result <- cnt_path(skeleton, start_point, end_point)
     expect_true(is.data.frame(result))
     expect_true(inherits(result, c("sf", "sfc", "SpatVector")))
-    # Check for LINESTRING geometry; this check might need to be adjusted based on the object class
+    # Check for LINESTRING geometry; 
     expect_true(all(
       sf::st_geometry_type(result) == "LINESTRING"
     ))
@@ -161,7 +161,7 @@ test_that(
     result <- cnt_path(skeleton, start_point, end_point)
     expect_true(is.data.frame(result))
     expect_true(inherits(result, c("sf", "sfc", "SpatVector")))
-    # Check for LINESTRING geometry; this check might need to be adjusted based on the object class
+    # Check for LINESTRING geometry
     expect_true(all(
       sf::st_geometry_type(result) == "LINESTRING"
     ))

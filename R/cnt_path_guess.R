@@ -197,12 +197,13 @@ cnt_path_guess_geos <-
 
     # Find total lengths of an object
     paths_length <-
-      base::sapply(
+      base::vapply(
         true_paths_geos,
         function(i) {
           geos::geos_length(i) |>
             base::sum()
-        }
+        },
+        FUN.VALUE = numeric(1)
       )
 
     # Return the longest path
@@ -323,12 +324,13 @@ cnt_path_guess_terra <-
 
     # Find total lengths of an object
     paths_length <-
-      base::sapply(
+      base::vapply(
         true_paths_geos,
         function(i) {
           geos::geos_length(i) |>
             base::sum()
-        }
+        },
+        FUN.VALUE = numeric(1)
       )
 
     # Return the longest path
@@ -445,12 +447,13 @@ cnt_path_guess_sf <-
 
     # Find total lengths of an object
     paths_length <-
-      base::sapply(
+      base::vapply(
         true_paths_geos,
         function(i) {
           geos::geos_length(i) |>
             base::sum()
-        }
+        },
+        FUN.VALUE = numeric(1)
       )
 
     true_paths_geos[[base::which.max(paths_length)]] |>
