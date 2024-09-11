@@ -76,6 +76,18 @@ cnt_path <-
   }
 
 #' @export
+cnt_path.geos_geometry <-
+  function(skeleton,
+           start_point,
+           end_point) {
+    cnt_path_geos(
+      skeleton = skeleton,
+      start_point = start_point,
+      end_point = end_point
+    )
+  }
+
+#' @export
 cnt_path.sf <-
   function(skeleton,
            start_point,
@@ -183,7 +195,7 @@ cnt_path_terra <-
     end_tail <- geos::geos_distance(end_geos, end_centerline)
 
     if (start_tail < end_tail) {
-      lines_list_sf <-
+      lines_list_terra <-
         lines_list_geos |>
         lapply(geos::geos_reverse) |>
         lapply(geos::geos_make_collection) |>
@@ -192,7 +204,7 @@ cnt_path_terra <-
         lapply(as.character) |>
         lapply(terra::vect, crs = crs)
     } else {
-      lines_list_sf <-
+      lines_list_terra <-
         lines_list_geos |>
         lapply(geos::geos_make_collection) |>
         lapply(geos::geos_line_merge) |>
@@ -201,8 +213,9 @@ cnt_path_terra <-
         lapply(terra::vect, crs = crs)
     }
 
-    return(lines_list_sf)
-    # dplyr::bind_rows(lines_list_sf, .id = "cnt_id")
+    # Return pathes binded with the start point df
+    Reduce(rbind, lines_list_terra) |>
+      cbind(sf::st_drop_geometry(start_point))
   }
 
 cnt_path_sf <-
@@ -280,6 +293,91 @@ cnt_path_sf <-
         lapply(sf::st_as_sf)
     }
 
-    lines_list_sf
-    # dplyr::bind_rows(lines_list_sf, .id = "cnt_id")
+    # Return pathes binded with the start point df
+    Reduce(rbind, lines_list_sf) |>
+      cbind(sf::st_drop_geometry(start_point))
+  }
+
+cnt_path_geos <-
+  function(skeleton,
+           start_point,
+           end_point) {
+    # Check if input is of class 'geos_geometry' and 'LINESTRING'
+    stopifnot(check_geos_lines(skeleton))
+
+    # Transform to sf
+    skeleton <-
+      sf::st_as_sf(skeleton)
+    start_point <-
+      sf::st_as_sf(start_point)
+    end_point <-
+      sf::st_as_sf(end_point)
+
+    # Transform to sfnetwork
+    pol_network <-
+      skeleton |>
+      sfnetworks::as_sfnetwork(directed = FALSE)
+
+    # Find indices of nearest nodes for start ...
+    start_nodes <-
+      sf::st_nearest_feature(start_point, pol_network)
+
+    # ... and end points
+    end_nodes <-
+      sf::st_nearest_feature(end_point, pol_network)
+
+    # Check if there are several end nodes
+    stopifnot(
+      length(end_nodes) == 1
+    )
+
+    # Measure length of the edges
+    net <-
+      pol_network |>
+      sfnetworks::activate("edges") |>
+      dplyr::mutate(length = sfnetworks::edge_length())
+
+    # Find the shortest path among centerline
+    paths <-
+      sfnetworks::st_network_paths(
+        net,
+        from = end_nodes,
+        to = start_nodes,
+        weights = "length"
+      )
+
+    # Convert to GEOS geometries and create a GEOS collection
+    lines_list_geos <-
+      lapply(
+        paths$edge_paths,
+        function(i) dplyr::slice(sfnetworks::activate(net, "edges"), i)
+      ) |>
+      lapply(sf::st_as_sf) |>
+      lapply(geos::as_geos_geometry) |>
+      lapply(geos::geos_make_collection) |>
+      lapply(geos::geos_line_merge)
+
+    # Check if we need to reverse the lines
+    start_centerline <- geos::geos_point_start(lines_list_geos[[1]])
+    end_centerline <- geos::geos_point_end(lines_list_geos[[1]])
+    end_geos <- geos::as_geos_geometry(end_point)
+
+    start_tail <- geos::geos_distance(end_geos, start_centerline)
+    end_tail <- geos::geos_distance(end_geos, end_centerline)
+
+    if (start_tail < end_tail) {
+      lines_list_sf <-
+        lines_list_geos |>
+        lapply(geos::geos_reverse) |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge)
+    } else {
+      lines_list_sf <-
+        lines_list_geos |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge)
+    }
+
+    # Return pathes
+    Reduce(c, lines_list_sf)
   }
