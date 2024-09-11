@@ -161,14 +161,7 @@ cnt_path_guess_geos <-
       geos::geos_unnest(keep_multi = FALSE)
 
     # Find closest nodes to the above found points
-    sk_geos <-
-      geos::as_geos_geometry(skeleton) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |>
-      geos::geos_strtree()
+    sk_geos <- skeleton_to_strtree(skeleton)
 
     closest_points <-
       geos::geos_nearest(main_points, sk_geos)
@@ -228,14 +221,13 @@ cnt_path_guess_terra <-
     # Save CRS
     crs <- terra::crs(input)
 
-    input <-
-      terra_to_sf(input)
+    # Transform to sf geometry
+    input <- terra_to_sf(input)
 
     # Transform to GEOS geometry
-    input_geos <-
-      input |>
-      geos::as_geos_geometry()
+    input_geos <- geos::as_geos_geometry(input)
 
+    # Find skeleton
     if (base::is.null(skeleton)) {
       skeleton <-
         cnt_skeleton(input = input, ...)
@@ -269,15 +261,12 @@ cnt_path_guess_terra <-
     # simplifying it
     perimeter_length <-
       geos::geos_length(input_geos)
-
     point_count <-
       input_geos |>
       geos::geos_unique_points() |>
       geos::geos_num_coordinates()
-
     point_density <-
       perimeter_length / point_count
-
     main_points <-
       geos::geos_simplify_preserve_topology(
         input_geos,
@@ -286,17 +275,8 @@ cnt_path_guess_terra <-
       geos::geos_unique_points() |>
       geos::geos_unnest(keep_multi = FALSE)
 
-
     # Find closest nodes to the above found points
-    sk_geos <-
-      geos::as_geos_geometry(skeleton) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |>
-      geos::geos_strtree()
-
+    sk_geos <- skeleton_to_strtree(skeleton)
     closest_points <-
       geos::geos_nearest(main_points, sk_geos)
 
@@ -304,6 +284,7 @@ cnt_path_guess_terra <-
     closest_end_points <-
       which.min(igraph::closeness(pol_graph))
 
+    # Find paths
     paths <-
       base::suppressWarnings(
         sfnetworks::st_network_paths(
@@ -357,6 +338,7 @@ cnt_path_guess_sf <-
       input |>
       geos::as_geos_geometry()
 
+    # Find skeleton
     if (base::is.null(skeleton)) {
       skeleton <-
         cnt_skeleton(input = input, ...)
@@ -394,12 +376,10 @@ cnt_path_guess_sf <-
     # simplifying it
     perimeter_length <-
       geos::geos_length(input_geos)
-
     point_count <-
       input_geos |>
       geos::geos_unique_points() |>
       geos::geos_num_coordinates()
-
     point_density <-
       perimeter_length / point_count
 
@@ -412,21 +392,13 @@ cnt_path_guess_sf <-
       geos::geos_unnest(keep_multi = FALSE)
 
     # Find closest nodes to the above found points
-    sk_geos <-
-      geos::as_geos_geometry(skeleton) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |>
-      geos::geos_strtree()
-
+    sk_geos <- skeleton_to_strtree(skeleton)
     closest_points <-
       geos::geos_nearest(main_points, sk_geos)
-
     closest_end_points <-
       which.min(igraph::closeness(pol_graph))
 
+    # Find paths
     paths <-
       base::suppressWarnings(
         sfnetworks::st_network_paths(
@@ -456,6 +428,7 @@ cnt_path_guess_sf <-
         FUN.VALUE = numeric(1)
       )
 
+    # Return the longest path
     true_paths_geos[[base::which.max(paths_length)]] |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>

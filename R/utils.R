@@ -177,6 +177,24 @@ geos_ms_densify <-
     )
   }
 
+# Skeleton to strtree
+skeleton_to_strtree <-
+  function(skeleton) {
+    if (!inherits(skeleton, "geos_geometry")) {
+      sk_crs <- sf::st_crs(skeleton)
+      skeleton <- geos::as_geos_geometry(skeleton)
+    } else {
+      sk_crs <- wk::wk_crs(skeleton)
+    }
+    skeleton |>
+      geos::geos_unique_points() |>
+      geos::geos_unnest(keep_multi = FALSE) |>
+      wk::as_wkt() |>
+      base::unique() |>
+      geos::as_geos_geometry(crs = sk_crs) |>
+      geos::geos_strtree()
+  }
+
 # Straight skeleton
 # straight_skeleton <-
 #   function(input) {
