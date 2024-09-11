@@ -38,6 +38,22 @@ geos_to_terra <-
   }
 
 # Polygon checks
+check_geos_polygon <- function(input) {
+  # Check if input is of class 'geos_geometry'
+  if (!inherits(input, "geos_geometry")) {
+    stop("Input is not of class 'geos_geometry'.")
+  }
+
+  # Check if geometry type is POLYGON
+  geom_type <- geos::geos_type(input)
+  if (!all(geom_type %in% c("polygon"))) {
+    stop("Input does not contain 'polygon' geometries.")
+  }
+
+  # If checks pass
+  return(TRUE)
+}
+
 check_sf_polygon <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "sf") && !inherits(input, "sfc")) {
@@ -55,7 +71,7 @@ check_sf_polygon <- function(input) {
 }
 
 check_terra_polygon <- function(input) {
-  # Check if input is of class 'sf'
+  # Check if input is of class 'SpatVector'
   if (!inherits(input, "SpatVector")) {
     stop("Input is not of class 'SpatVector'.")
   }
@@ -80,6 +96,22 @@ check_sf_lines <- function(input) {
   # Check if geometry type is POLYGON
   geom_type <- sf::st_geometry_type(input)
   if (!all(geom_type %in% c("LINESTRING"))) {
+    stop("Input does not contain 'LINESTRING' geometries.")
+  }
+
+  # If checks pass
+  return(TRUE)
+}
+
+check_geos_lines <- function(input) {
+  # Check if input is of class 'geos_geometry'
+  if (!inherits(input, "geos_geometry")) {
+    stop("Input is not of class 'geos_geometry'.")
+  }
+
+  # Check if geometry type is LINESTRING
+  geom_type <- geos::geos_type(input)
+  if (!all(geom_type %in% c("linestring"))) {
     stop("Input does not contain 'LINESTRING' geometries.")
   }
 

@@ -40,7 +40,8 @@ test_that("'keep' parameter affects the output", {
   polygon <-
     sf::st_read(
       system.file("extdata/example.gpkg", package = "centerline"),
-      layer = "polygon"
+      layer = "polygon",
+      quiet = TRUE
     )
 
   result_simplified <- cnt_skeleton(polygon, keep = 0.1)
