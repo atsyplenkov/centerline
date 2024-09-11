@@ -1,4 +1,7 @@
+# Inter-class transformers -----------------------------------------------
 # Terra to SF transformer
+# This function is five time faster than
+# st::st_as_sf() due to {wk} package
 terra_to_sf <-
   function(input) {
     spatial_data <-
@@ -37,7 +40,8 @@ geos_to_terra <-
     )
   }
 
-# Polygon checks
+# Class checks -----------------------------------------------------------
+# GEOS polygon checks
 check_geos_polygon <- function(input) {
   # Check if input is of class 'geos_geometry'
   if (!inherits(input, "geos_geometry")) {
@@ -54,6 +58,7 @@ check_geos_polygon <- function(input) {
   return(TRUE)
 }
 
+# sf polygon checks
 check_sf_polygon <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "sf") && !inherits(input, "sfc")) {
@@ -70,6 +75,7 @@ check_sf_polygon <- function(input) {
   return(TRUE)
 }
 
+# terra polygon checks
 check_terra_polygon <- function(input) {
   # Check if input is of class 'SpatVector'
   if (!inherits(input, "SpatVector")) {
@@ -86,7 +92,7 @@ check_terra_polygon <- function(input) {
   return(TRUE)
 }
 
-# Linestring checks
+# sf linestring checks
 check_sf_lines <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "sf") && !inherits(input, "sfc")) {
@@ -103,6 +109,7 @@ check_sf_lines <- function(input) {
   return(TRUE)
 }
 
+# GEOS linestring checks
 check_geos_lines <- function(input) {
   # Check if input is of class 'geos_geometry'
   if (!inherits(input, "geos_geometry")) {
@@ -119,6 +126,7 @@ check_geos_lines <- function(input) {
   return(TRUE)
 }
 
+# terra linestring checks
 check_terra_lines <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "SpatVector")) {
@@ -135,7 +143,8 @@ check_terra_lines <- function(input) {
   return(TRUE)
 }
 
-# Fast simplification, similiar to mapshaper simplify
+# Polygon simplifications ------------------------------------------------
+# Fast simplification, similiar to {mapshaper} ms_simplify
 geos_ms_simplify <-
   function(geom,
            keep) {
@@ -156,7 +165,7 @@ geos_ms_simplify <-
     )
   }
 
-# Fast densification, similar behavior to mapshaper simplify
+# Fast densification, similar behavior to {mapshaper} ms_simplify
 geos_ms_densify <-
   function(geom,
            keep) {
@@ -177,6 +186,7 @@ geos_ms_densify <-
     )
   }
 
+# Skeletons ---------------------------------------------------------------
 # Skeleton to strtree
 skeleton_to_strtree <-
   function(skeleton) {
