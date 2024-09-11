@@ -1,7 +1,6 @@
 library(testthat)
 library(sf)
 library(terra)
-library(centerline)
 library(sfnetworks)
 
 test_that(
