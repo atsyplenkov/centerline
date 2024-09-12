@@ -186,6 +186,25 @@ geos_ms_densify <-
     )
   }
 
+# Unique points ----------------------------------------------------------
+# Return unique points from a geos geometry
+unique_points <-
+  function(geos_obj) {
+    if (!inherits(geos_obj, "geos_geometry") &&
+      !inherits(geos_obj, "SpatVector")) {
+      geos_obj <- geos::as_geos_geometry(geos_obj)
+    } else if (inherits(geos_obj, "SpatVector")) {
+      geos_obj <- terra_to_geos(geos_obj)
+    }
+
+    geos_obj |>
+      geos::geos_unique_points() |>
+      geos::geos_unnest(keep_multi = FALSE) |>
+      wk::as_wkt() |>
+      base::unique() |>
+      geos::as_geos_geometry(crs = wk::wk_crs(geos_obj))
+  }
+
 # Skeletons ---------------------------------------------------------------
 # Skeleton to strtree
 skeleton_to_strtree <-
