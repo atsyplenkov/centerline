@@ -1,4 +1,7 @@
+# Inter-class transformers -----------------------------------------------
 # Terra to SF transformer
+# This function is five time faster than
+# st::st_as_sf() due to {wk} package
 terra_to_sf <-
   function(input) {
     spatial_data <-
@@ -37,7 +40,8 @@ geos_to_terra <-
     )
   }
 
-# Polygon checks
+# Class checks -----------------------------------------------------------
+# GEOS polygon checks
 check_geos_polygon <- function(input) {
   # Check if input is of class 'geos_geometry'
   if (!inherits(input, "geos_geometry")) {
@@ -54,6 +58,7 @@ check_geos_polygon <- function(input) {
   return(TRUE)
 }
 
+# sf polygon checks
 check_sf_polygon <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "sf") && !inherits(input, "sfc")) {
@@ -70,6 +75,7 @@ check_sf_polygon <- function(input) {
   return(TRUE)
 }
 
+# terra polygon checks
 check_terra_polygon <- function(input) {
   # Check if input is of class 'SpatVector'
   if (!inherits(input, "SpatVector")) {
@@ -86,7 +92,7 @@ check_terra_polygon <- function(input) {
   return(TRUE)
 }
 
-# Linestring checks
+# sf linestring checks
 check_sf_lines <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "sf") && !inherits(input, "sfc")) {
@@ -103,6 +109,7 @@ check_sf_lines <- function(input) {
   return(TRUE)
 }
 
+# GEOS linestring checks
 check_geos_lines <- function(input) {
   # Check if input is of class 'geos_geometry'
   if (!inherits(input, "geos_geometry")) {
@@ -119,6 +126,7 @@ check_geos_lines <- function(input) {
   return(TRUE)
 }
 
+# terra linestring checks
 check_terra_lines <- function(input) {
   # Check if input is of class 'sf'
   if (!inherits(input, "SpatVector")) {
@@ -135,7 +143,8 @@ check_terra_lines <- function(input) {
   return(TRUE)
 }
 
-# Fast simplification, similiar to mapshaper simplify
+# Polygon simplifications ------------------------------------------------
+# Fast simplification, similiar to {mapshaper} ms_simplify
 geos_ms_simplify <-
   function(geom,
            keep) {
@@ -156,7 +165,7 @@ geos_ms_simplify <-
     )
   }
 
-# Fast densification, similar behavior to mapshaper simplify
+# Fast densification, similar behavior to {mapshaper} ms_simplify
 geos_ms_densify <-
   function(geom,
            keep) {
@@ -175,6 +184,44 @@ geos_ms_densify <-
       geom,
       tolerance = point_density / (keep)
     )
+  }
+
+# Unique points ----------------------------------------------------------
+# Return unique points from a geos geometry
+unique_points <-
+  function(geos_obj) {
+    if (!inherits(geos_obj, "geos_geometry") &&
+      !inherits(geos_obj, "SpatVector")) {
+      geos_obj <- geos::as_geos_geometry(geos_obj)
+    } else if (inherits(geos_obj, "SpatVector")) {
+      geos_obj <- terra_to_geos(geos_obj)
+    }
+
+    geos_obj |>
+      geos::geos_unique_points() |>
+      geos::geos_unnest(keep_multi = FALSE) |>
+      wk::as_wkt() |>
+      base::unique() |>
+      geos::as_geos_geometry(crs = wk::wk_crs(geos_obj))
+  }
+
+# Skeletons ---------------------------------------------------------------
+# Skeleton to strtree
+skeleton_to_strtree <-
+  function(skeleton) {
+    if (!inherits(skeleton, "geos_geometry")) {
+      sk_crs <- sf::st_crs(skeleton)
+      skeleton <- geos::as_geos_geometry(skeleton)
+    } else {
+      sk_crs <- wk::wk_crs(skeleton)
+    }
+    skeleton |>
+      geos::geos_unique_points() |>
+      geos::geos_unnest(keep_multi = FALSE) |>
+      wk::as_wkt() |>
+      base::unique() |>
+      geos::as_geos_geometry(crs = sk_crs) |>
+      geos::geos_strtree()
   }
 
 # Straight skeleton

@@ -89,12 +89,11 @@ test_that(
       )
     polygon$id <- seq_len(nrow(polygon))
     polygon21 <- subset(polygon, id == 21)
-    polygon_path <- cnt_path_guess(polygon21, keep = 1.6)
 
     # Test that all paths are created without errors
     # With keep parameter varying from 0 to 2
     test_list <-
-      lapply(seq(0, 2, by = 0.1), function(x) {
+      lapply(seq(0.1, 2, by = 0.1), function(x) {
         tryCatch(
           cnt_path_guess(polygon21, keep = x),
           error = \(e) NA

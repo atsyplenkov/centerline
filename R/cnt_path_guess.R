@@ -131,50 +131,20 @@ cnt_path_guess_geos <-
         length_as_weight = TRUE,
         edges_as_lines = TRUE
       )
-
     # Convert sfnetworks to igraph
     pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph$weight <- as.numeric(df_graph$weight)
 
-    # Activate network edges
-    pol_edges <-
-      pol_network |>
-      sfnetworks::activate("edges")
+    # Find border points of skeleton
+    closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
 
-    # Find main points of the polygon by
-    # simplifying it
-    perimeter_length <- geos::geos_length(input)
-
-    point_count <-
-      input |>
-      geos::geos_unique_points() |>
-      geos::geos_num_coordinates()
-
-    point_density <-
-      perimeter_length / point_count
-
-    main_points <-
-      geos::geos_simplify_preserve_topology(
-        input,
-        tolerance = point_density / 0.1
-      ) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE)
-
-    # Find closest nodes to the above found points
-    sk_geos <-
-      geos::as_geos_geometry(skeleton) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |>
-      geos::geos_strtree()
-
-    closest_points <-
-      geos::geos_nearest(main_points, sk_geos)
-
+    # Find the most distant point from center
+    # It will serve as the end point
     closest_end_points <-
-      which.min(igraph::closeness(pol_graph))
+      closest_points[which.min(
+        igraph::closeness(pol_graph, vid = closest_points)
+      )]
 
     # Find paths
     paths <-
@@ -187,28 +157,38 @@ cnt_path_guess_geos <-
         )
       )
 
-    # Transform paths to geos objects
-    true_paths_geos <-
-      paths$edge_paths |>
-      base::lapply(function(.x) {
-        as.data.frame(pol_edges)[.x, ]
-      }) |>
-      base::lapply(geos::as_geos_geometry)
-
-    # Find total lengths of an object
+    # Paths lengths in counts
     paths_length <-
       base::vapply(
-        true_paths_geos,
-        function(i) {
-          geos::geos_length(i) |>
-            base::sum()
-        },
-        FUN.VALUE = numeric(1)
+        paths$edge_paths,
+        length,
+        FUN.VALUE = integer(1),
+        USE.NAMES = FALSE
       )
 
+    # Filter non-zero paths
+    paths_length_flag <- paths_length > 1
+    paths_length_nonzero <- paths_length[paths_length_flag]
+    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
+
+    # Estimate paths lengths
+    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
+    edge_paths_groups <-
+      rep(
+        seq_along(edge_paths_nonzero),
+        times = paths_length_nonzero
+      )
+    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
+
+    # Sum paths lengths in meters
+    true_paths_igraph <-
+      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
+
     # Return the longest path
+    longest_path_igraph <- which.max(true_paths_igraph)
     longest_path_geos <-
-      true_paths_geos[[base::which.max(paths_length)]] |>
+      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
+      geos::as_geos_geometry() |>
       geos::geos_make_collection() |>
       geos::geos_line_merge()
 
@@ -228,17 +208,16 @@ cnt_path_guess_terra <-
     # Save CRS
     crs <- terra::crs(input)
 
-    input <-
-      terra_to_sf(input)
+    # Transform to sf geometry
+    input_sf <- terra_to_sf(input)
 
     # Transform to GEOS geometry
-    input_geos <-
-      input |>
-      geos::as_geos_geometry()
+    input_geos <- geos::as_geos_geometry(input_sf)
 
+    # Find skeleton
     if (base::is.null(skeleton)) {
       skeleton <-
-        cnt_skeleton(input = input, ...)
+        cnt_skeleton(input = input_sf, ...)
     } else if (!inherits(skeleton, "SpatVector")) {
       skeleton <-
         terra_to_sf(skeleton)
@@ -254,56 +233,22 @@ cnt_path_guess_terra <-
         length_as_weight = TRUE,
         edges_as_lines = TRUE
       )
-
     # Convert sfnetworks to igraph
-    pol_graph <-
-      pol_network |>
-      igraph::as.igraph()
+    pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph$weight <- as.numeric(df_graph$weight)
 
-    # Activate network edges
-    pol_edges <-
-      pol_network |>
-      sfnetworks::activate("edges")
+    # Find border points of skeleton
+    closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
 
-    # Find main points of the polygon by
-    # simplifying it
-    perimeter_length <-
-      geos::geos_length(input_geos)
-
-    point_count <-
-      input_geos |>
-      geos::geos_unique_points() |>
-      geos::geos_num_coordinates()
-
-    point_density <-
-      perimeter_length / point_count
-
-    main_points <-
-      geos::geos_simplify_preserve_topology(
-        input_geos,
-        tolerance = point_density / 0.1
-      ) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE)
-
-
-    # Find closest nodes to the above found points
-    sk_geos <-
-      geos::as_geos_geometry(skeleton) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |>
-      geos::geos_strtree()
-
-    closest_points <-
-      geos::geos_nearest(main_points, sk_geos)
-
-    # Find the most distant from center point
+    # Find the most distant point from center
+    # It will serve as the end point
     closest_end_points <-
-      which.min(igraph::closeness(pol_graph))
+      closest_points[which.min(
+        igraph::closeness(pol_graph, vid = closest_points)
+      )]
 
+    # Find paths
     paths <-
       base::suppressWarnings(
         sfnetworks::st_network_paths(
@@ -314,32 +259,45 @@ cnt_path_guess_terra <-
         )
       )
 
-    # Transform paths to GEOS object
-    true_paths_geos <-
-      paths$edge_paths |>
-      base::lapply(function(.x) {
-        as.data.frame(pol_edges)[.x, ]
-      }) |>
-      base::lapply(geos::as_geos_geometry)
-
-    # Find total lengths of an object
+    # Paths lengths in counts
     paths_length <-
       base::vapply(
-        true_paths_geos,
-        function(i) {
-          geos::geos_length(i) |>
-            base::sum()
-        },
-        FUN.VALUE = numeric(1)
+        paths$edge_paths,
+        length,
+        FUN.VALUE = integer(1),
+        USE.NAMES = FALSE
       )
 
+    # Filter non-zero paths
+    paths_length_flag <- paths_length > 1
+    paths_length_nonzero <- paths_length[paths_length_flag]
+    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
+
+    # Estimate paths lengths
+    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
+    edge_paths_groups <-
+      rep(
+        seq_along(edge_paths_nonzero),
+        times = paths_length_nonzero
+      )
+    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
+
+    # Sum paths lengths in meters
+    true_paths_igraph <-
+      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
+
     # Return the longest path
-    true_paths_geos[[base::which.max(paths_length)]] |>
+    longest_path_igraph <- which.max(true_paths_igraph)
+    longest_path_geos <-
+      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
+      geos::as_geos_geometry() |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       wk::as_wkt() |>
       base::as.character() |>
       terra::vect(crs = crs)
+
+    return(longest_path_geos)
   }
 
 cnt_path_guess_sf <-
@@ -357,6 +315,7 @@ cnt_path_guess_sf <-
       input |>
       geos::as_geos_geometry()
 
+    # Find skeleton
     if (base::is.null(skeleton)) {
       skeleton <-
         cnt_skeleton(input = input, ...)
@@ -379,54 +338,22 @@ cnt_path_guess_sf <-
         length_as_weight = TRUE,
         edges_as_lines = TRUE
       )
-
     # Convert sfnetworks to igraph
-    pol_graph <-
-      pol_network |>
-      igraph::as.igraph()
+    pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph$weight <- as.numeric(df_graph$weight)
 
-    # Activate network edges
-    pol_edges <-
-      pol_network |>
-      sfnetworks::activate("edges")
+    # Find border points of skeleton
+    closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
 
-    # Find main points of the polygon by
-    # simplifying it
-    perimeter_length <-
-      geos::geos_length(input_geos)
-
-    point_count <-
-      input_geos |>
-      geos::geos_unique_points() |>
-      geos::geos_num_coordinates()
-
-    point_density <-
-      perimeter_length / point_count
-
-    main_points <-
-      geos::geos_simplify_preserve_topology(
-        input_geos,
-        tolerance = point_density / 0.1
-      ) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE)
-
-    # Find closest nodes to the above found points
-    sk_geos <-
-      geos::as_geos_geometry(skeleton) |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(skeleton)) |>
-      geos::geos_strtree()
-
-    closest_points <-
-      geos::geos_nearest(main_points, sk_geos)
-
+    # Find the most distant point from center
+    # It will serve as the end point
     closest_end_points <-
-      which.min(igraph::closeness(pol_graph))
+      closest_points[which.min(
+        igraph::closeness(pol_graph, vid = closest_points)
+      )]
 
+    # Find paths
     paths <-
       base::suppressWarnings(
         sfnetworks::st_network_paths(
@@ -437,28 +364,42 @@ cnt_path_guess_sf <-
         )
       )
 
-    # Transform paths to sf objects
-    true_paths_geos <-
-      paths$edge_paths |>
-      base::lapply(function(.x) {
-        as.data.frame(pol_edges)[.x, ]
-      }) |>
-      base::lapply(geos::as_geos_geometry)
-
-    # Find total lengths of an object
+    # Paths lengths in counts
     paths_length <-
       base::vapply(
-        true_paths_geos,
-        function(i) {
-          geos::geos_length(i) |>
-            base::sum()
-        },
-        FUN.VALUE = numeric(1)
+        paths$edge_paths,
+        length,
+        FUN.VALUE = integer(1),
+        USE.NAMES = FALSE
       )
 
-    true_paths_geos[[base::which.max(paths_length)]] |>
+    # Filter non-zero paths
+    paths_length_flag <- paths_length > 1
+    paths_length_nonzero <- paths_length[paths_length_flag]
+    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
+
+    # Estimate paths lengths
+    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
+    edge_paths_groups <-
+      rep(
+        seq_along(edge_paths_nonzero),
+        times = paths_length_nonzero
+      )
+    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
+
+    # Sum paths lengths in meters
+    true_paths_igraph <-
+      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
+
+    # Return the longest path
+    longest_path_igraph <- which.max(true_paths_igraph)
+    longest_path_geos <-
+      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
+      geos::as_geos_geometry() |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       sf::st_as_sf() |>
       sf::st_set_crs(crs)
+
+    return(longest_path_geos)
   }
