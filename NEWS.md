@@ -1,3 +1,15 @@
+centerline 0.0.4 (2024-09-13)
+=========================
+
+### UPDATES
+
+  * Two times increase in centerline guessing due to a change in the search algorithm.  
+  * Centerline guessing now occurs by calculating the longest path between **skeleton nodes**, rather than *polygon nodes* as it was previously. As a result, the final output is smoother at the edges.
+
+### Bug fixes
+  * Fix #1
+  * Fix #3
+
 centerline 0.0.3 (2024-05-17)
 =========================
 
