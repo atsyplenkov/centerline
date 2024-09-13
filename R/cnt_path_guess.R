@@ -133,6 +133,8 @@ cnt_path_guess_geos <-
       )
     # Convert sfnetworks to igraph
     pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph$weight <- as.numeric(df_graph$weight)
 
     # Find border points of skeleton
     closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
@@ -155,42 +157,38 @@ cnt_path_guess_geos <-
         )
       )
 
-    # Paths lengths
+    # Paths lengths in counts
     paths_length <-
       base::vapply(
         paths$edge_paths,
         length,
-        FUN.VALUE = numeric(1)
-      )
-    # Find path with the greatest amount of segments
-    # I.e. it doesn't mean that it is the longest path
-    length_quantile <-
-      stats::quantile(paths_length, 0.95, na.rm = TRUE)
-
-    # Transform greatest paths to geos objects
-    edge_paths_filtered <- paths$edge_paths[paths_length >= length_quantile]
-    df_paths <- igraph::as_data_frame(pol_graph)[, "geometry"]
-    true_paths_geos <-
-      edge_paths_filtered |>
-      base::lapply(function(.x) {
-        df_paths[.x, ] |>
-          geos::as_geos_geometry()
-      })
-
-    # Find total lengths of an object
-    paths_length_geos <-
-      base::vapply(
-        true_paths_geos,
-        function(i) {
-          sum(geos::geos_length(i))
-        },
-        FUN.VALUE = numeric(1),
+        FUN.VALUE = integer(1),
         USE.NAMES = FALSE
       )
 
+    # Filter non-zero paths
+    paths_length_flag <- paths_length > 1
+    paths_length_nonzero <- paths_length[paths_length_flag]
+    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
+
+    # Estimate paths lengths
+    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
+    edge_paths_groups <-
+      rep(
+        seq_along(edge_paths_nonzero),
+        times = paths_length_nonzero
+      )
+    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
+
+    # Sum paths lengths in meters
+    true_paths_igraph <-
+      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
+
     # Return the longest path
+    longest_path_igraph <- which.max(true_paths_igraph)
     longest_path_geos <-
-      true_paths_geos[[base::which.max(paths_length_geos)]] |>
+      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
+      geos::as_geos_geometry() |>
       geos::geos_make_collection() |>
       geos::geos_line_merge()
 
@@ -237,6 +235,8 @@ cnt_path_guess_terra <-
       )
     # Convert sfnetworks to igraph
     pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph$weight <- as.numeric(df_graph$weight)
 
     # Find border points of skeleton
     closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
@@ -259,46 +259,45 @@ cnt_path_guess_terra <-
         )
       )
 
-    # Paths lengths
+    # Paths lengths in counts
     paths_length <-
       base::vapply(
         paths$edge_paths,
         length,
-        FUN.VALUE = numeric(1)
-      )
-    # Find path with the greatest amount of segments
-    # I.e. it doesn't mean that it is the longest path
-    length_quantile <-
-      stats::quantile(paths_length, 0.95, na.rm = TRUE)
-
-    # Transform greatest paths to geos objects
-    edge_paths_filtered <- paths$edge_paths[paths_length >= length_quantile]
-    df_paths <- igraph::as_data_frame(pol_graph)[, "geometry"]
-    true_paths_geos <-
-      edge_paths_filtered |>
-      base::lapply(function(.x) {
-        df_paths[.x, ] |>
-          geos::as_geos_geometry()
-      })
-
-    # Find total lengths of an object
-    paths_length_geos <-
-      base::vapply(
-        true_paths_geos,
-        function(i) {
-          sum(geos::geos_length(i))
-        },
-        FUN.VALUE = numeric(1),
+        FUN.VALUE = integer(1),
         USE.NAMES = FALSE
       )
 
+    # Filter non-zero paths
+    paths_length_flag <- paths_length > 1
+    paths_length_nonzero <- paths_length[paths_length_flag]
+    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
+
+    # Estimate paths lengths
+    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
+    edge_paths_groups <-
+      rep(
+        seq_along(edge_paths_nonzero),
+        times = paths_length_nonzero
+      )
+    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
+
+    # Sum paths lengths in meters
+    true_paths_igraph <-
+      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
+
     # Return the longest path
-    true_paths_geos[[base::which.max(paths_length_geos)]] |>
+    longest_path_igraph <- which.max(true_paths_igraph)
+    longest_path_geos <-
+      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
+      geos::as_geos_geometry() |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       wk::as_wkt() |>
       base::as.character() |>
       terra::vect(crs = crs)
+
+    return(longest_path_geos)
   }
 
 cnt_path_guess_sf <-
@@ -341,6 +340,8 @@ cnt_path_guess_sf <-
       )
     # Convert sfnetworks to igraph
     pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph$weight <- as.numeric(df_graph$weight)
 
     # Find border points of skeleton
     closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
@@ -363,43 +364,42 @@ cnt_path_guess_sf <-
         )
       )
 
-    # Paths lengths
+    # Paths lengths in counts
     paths_length <-
       base::vapply(
         paths$edge_paths,
         length,
-        FUN.VALUE = numeric(1)
-      )
-    # Find path with the greatest amount of segments
-    # I.e. it doesn't mean that it is the longest path
-    length_quantile <-
-      stats::quantile(paths_length, 0.95, na.rm = TRUE)
-
-    # Transform greatest paths to geos objects
-    edge_paths_filtered <- paths$edge_paths[paths_length >= length_quantile]
-    df_paths <- igraph::as_data_frame(pol_graph)[, "geometry"]
-    true_paths_geos <-
-      edge_paths_filtered |>
-      base::lapply(function(.x) {
-        df_paths[.x, ] |>
-          geos::as_geos_geometry()
-      })
-
-    # Find total lengths of an object
-    paths_length_geos <-
-      base::vapply(
-        true_paths_geos,
-        function(i) {
-          sum(geos::geos_length(i))
-        },
-        FUN.VALUE = numeric(1),
+        FUN.VALUE = integer(1),
         USE.NAMES = FALSE
       )
 
+    # Filter non-zero paths
+    paths_length_flag <- paths_length > 1
+    paths_length_nonzero <- paths_length[paths_length_flag]
+    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
+
+    # Estimate paths lengths
+    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
+    edge_paths_groups <-
+      rep(
+        seq_along(edge_paths_nonzero),
+        times = paths_length_nonzero
+      )
+    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
+
+    # Sum paths lengths in meters
+    true_paths_igraph <-
+      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
+
     # Return the longest path
-    true_paths_geos[[base::which.max(paths_length_geos)]] |>
+    longest_path_igraph <- which.max(true_paths_igraph)
+    longest_path_geos <-
+      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
+      geos::as_geos_geometry() |>
       geos::geos_make_collection() |>
       geos::geos_line_merge() |>
       sf::st_as_sf() |>
       sf::st_set_crs(crs)
+
+    return(longest_path_geos)
   }
