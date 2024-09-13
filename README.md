@@ -1,4 +1,5 @@
 
+
 <!-- README.md is generated from README.qmd. Please edit that file -->
 
 # centerline
@@ -11,7 +12,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![CRAN
 status](https://www.r-pkg.org/badges/version/centerline.png)](https://CRAN.R-project.org/package=centerline)
 ![GitHub R package
-version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline?label=github.png)
+version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline.png)
 ![GitHub last
 commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline.png)
 <!-- badges: end -->
@@ -52,7 +53,7 @@ parameter `keep = 1` to work with the initial geometry.
 ``` r
 library(centerline)
 library(terra)
-#> terra 1.7.71
+#> terra 1.7.78
 
 # Load Polygon Of Interest (POI)
 polygon <-
@@ -167,24 +168,24 @@ par(mfrow = c(1, 3))
 # Original
 plot(polygon, border = "grey20",
      main = paste0("Original path (L = ",
-                   round(terra::perim(pol_path[[1]]), 2), " m)"))
-plot(pol_path[[1]], lwd = 3, add = T)
+                   round(terra::perim(pol_path[1, ]), 2), " m)"))
+plot(pol_path[1, ], lwd = 3, add = T)
 plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
 # Simplified
 plot(polygon, border = "grey20",
      main = paste0("Simplified path (L = ",
-                   round(terra::perim(pol_path_simplify[[1]]), 2), " m)"))
-plot(pol_path_simplify[[1]], lwd = 3, add = T)
+                   round(terra::perim(pol_path_simplify[1, ]), 2), " m)"))
+plot(pol_path_simplify[1, ], lwd = 3, add = T)
 plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 
 # Densified
 plot(polygon, border = "grey20",
      main = paste0("Densified path (L = ",
-                   round(terra::perim(pol_path_dens[[1]]), 2), " m)"))
-plot(pol_path_dens[[1]], lwd = 3, add = T)
+                   round(terra::perim(pol_path_dens[1, ]), 2), " m)"))
+plot(pol_path_dens[1, ], lwd = 3, add = T)
 plot(points[1, ], col = "coral2",  add = T)
 plot(points[2, ], col = "green4",  add = T)
 ```
@@ -264,6 +265,42 @@ ggplot() +
   facet_wrap(~lc) +
   theme_void() +
   theme(strip.text = element_blank())
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
+#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
+#> font family not found in Windows font database
 ```
 
 </details>
