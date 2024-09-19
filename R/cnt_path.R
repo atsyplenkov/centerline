@@ -142,11 +142,11 @@ cnt_path_terra <-
 
     # Transform to sf objects
     skeleton <-
-      terra_to_sf(skeleton)
+      sf::st_as_sf(skeleton)
     start_point <-
-      terra_to_sf(start_point)
+      sf::st_as_sf(start_point)
     end_point <-
-      terra_to_sf(end_point)
+      sf::st_as_sf(end_point)
 
     # Find the paths
     cnt_path_master(skeleton, start_point, end_point) |>
