@@ -1,5 +1,5 @@
 Package: centerline
-Title: Extract Centerline From A Closed Polygons
+Title: Extract Centerline from a Closed Polygons
 Version: 0.0.4
 Authors@R:
     c(
