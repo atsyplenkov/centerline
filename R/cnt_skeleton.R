@@ -37,7 +37,8 @@
 #'
 #' polygon <-
 #'   sf::st_read(system.file("extdata/example.gpkg", package = "centerline"),
-#'     layer = "polygon"
+#'     layer = "polygon",
+#'     quiet = TRUE
 #'   )
 #'
 #' plot(polygon)

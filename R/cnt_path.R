@@ -34,11 +34,8 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #'
 #' library(terra)
-#' library(centerline)
-#'
 #' # Load Polygon and points data
 #' polygon <-
 #'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
@@ -64,10 +61,9 @@
 #'
 #' # Plot
 #' plot(polygon)
-#' plot(pol_skeleton, col = "blue", add = T)
-#' plot(points[1:2, ], col = "red", add = T)
-#' plot(pol_path[[1]], lwd = 3, add = T)
-#' }
+#' plot(pol_skeleton, col = "blue", add = TRUE)
+#' plot(points[1:2, ], col = "red", add = TRUE)
+#' plot(pol_path[1, ], lwd = 3, add = TRUE)
 #'
 cnt_path <-
   function(skeleton,

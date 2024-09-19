@@ -46,7 +46,7 @@ plot(lake)
 
 cnt_path_guess(
   input = lake,
-  keep = 1.1
+  keep = 1
 ) |>
   plot(
     col = "firebrick",

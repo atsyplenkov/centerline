@@ -45,11 +45,8 @@ skeleton may be more detailed, increasing the likelihood that the starting
 and ending points are already situated on the skeleton paths.
 }
 \examples{
-\dontrun{
 
 library(terra)
-library(centerline)
-
 # Load Polygon and points data
 polygon <-
   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
@@ -75,9 +72,8 @@ pol_path <-
 
 # Plot
 plot(polygon)
-plot(pol_skeleton, col = "blue", add = T)
-plot(points[1:2, ], col = "red", add = T)
-plot(pol_path[[1]], lwd = 3, add = T)
-}
+plot(pol_skeleton, col = "blue", add = TRUE)
+plot(points[1:2, ], col = "red", add = TRUE)
+plot(pol_path[1, ], lwd = 3, add = TRUE)
 
 }

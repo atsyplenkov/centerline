@@ -7,7 +7,8 @@
 cnt_skeleton(input, keep = 0.5)
 }
 \arguments{
-\item{input}{\code{sf}, \code{sfc}, \code{SpatVector}, or \code{geos_geometry} polygons object}
+\item{input}{\code{sf}, \code{sfc}, \code{SpatVector}, or
+\code{geos_geometry} polygons object}
 
 \item{keep}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
 See Details.}
@@ -27,8 +28,8 @@ function will use the original geometry to find the skeleton.
 function will be used. So the original input
 geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
-The current realisation of simplification is similar (\emph{but not identical}) to
-\code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm. However,
+The current realisation of simplification is similar (\emph{but not identical})
+to \code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm. However,
 due to \code{geos} superpower, it performs \emph{ca.} 50x times faster.
 If you find that the built-in simplification algorithm performs poorly,
 try \code{rmapshaper::ms_simplify()} first and then find the polygon skeleton
@@ -45,7 +46,8 @@ library(sf)
 
 polygon <-
   sf::st_read(system.file("extdata/example.gpkg", package = "centerline"),
-    layer = "polygon"
+    layer = "polygon",
+    quiet = TRUE
   )
 
 plot(polygon)
