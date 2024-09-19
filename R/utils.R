@@ -41,6 +41,21 @@ geos_to_terra <-
   }
 
 # Class checks -----------------------------------------------------------
+# Check that all objects share the same class
+check_same_class <- function(obj1, obj2, obj3) {
+  class1 <- class(obj1)
+  class2 <- class(obj2)
+  class3 <- class(obj3)
+
+  class_check <-
+    base::identical(class1, class2) &&
+      base::identical(class1, class3)
+
+  if (!class_check) {
+    stop("All objects must share the same class.")
+  }
+}
+
 # GEOS polygon checks
 check_geos_polygon <- function(input) {
   # Check if input is of class 'geos_geometry'

@@ -131,6 +131,11 @@ cnt_path_terra <-
            end_point) {
     # Check if input is of class 'SpatVector' and 'lines'
     stopifnot(check_terra_lines(skeleton))
+    check_same_class(
+      skeleton,
+      start_point,
+      end_point
+    )
 
     # Save CRS
     crs <- terra::crs(skeleton)
@@ -157,6 +162,11 @@ cnt_path_sf <-
            end_point) {
     # Check if input is of class 'sf' and 'LINESTRING'
     stopifnot(check_sf_lines(skeleton))
+    check_same_class(
+      skeleton,
+      start_point,
+      end_point
+    )
 
     # Find the paths
     cnt_path_master(skeleton, start_point, end_point) |>
@@ -170,6 +180,11 @@ cnt_path_geos <-
            end_point) {
     # Check if input is of class 'geos_geometry' and 'LINESTRING'
     stopifnot(check_geos_lines(skeleton))
+    check_same_class(
+      skeleton,
+      start_point,
+      end_point
+    )
 
     # Transform to sf
     skeleton <-
