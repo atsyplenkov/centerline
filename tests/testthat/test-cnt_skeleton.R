@@ -83,3 +83,31 @@ test_that("cnt_skeleton errors on incorrect input types", {
     cnt_skeleton("not an sf object")
   )
 })
+
+# Test simplification/densification
+test_that(
+  "cnt_skeleton works with any 'keep' parameter",
+  {
+    polygon <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "shapes",
+        quiet = TRUE
+      )
+    polygon$id <- seq_len(nrow(polygon))
+    polygon21 <- subset(polygon, id == 21)
+
+    # Test that all paths are created without errors
+    # With keep parameter varying from 0 to 2
+    test_list <-
+      lapply(seq(0.1, 2, by = 0.1), function(x) {
+        tryCatch(
+          cnt_skeleton(polygon21, keep = x),
+          error = \(e) NA
+        )
+      })
+
+    # Check that all paths are not NA
+    expect_true(all(!is.na(test_list)))
+  }
+)

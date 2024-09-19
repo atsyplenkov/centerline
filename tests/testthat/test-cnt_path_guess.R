@@ -5,7 +5,7 @@ library(sfnetworks)
 
 test_that(
   "cnt_path_guess handles sf, SpatVector and geos_geometry
-  inputs equivalently",
+  inputs equivalently, saving CRS",
   {
     polygon <-
       sf::st_read(
@@ -13,14 +13,16 @@ test_that(
         layer = "polygon",
         quiet = TRUE
       )
+    polygon_terra <- terra::vect(polygon)
+    polygon_geos <- geos::as_geos_geometry(polygon)
 
-    # Find polygon's skeleton
+    # Find polygon's longest path
     result_sf <-
       cnt_path_guess(polygon)
     result_spat <-
-      cnt_path_guess(terra::vect(polygon))
+      cnt_path_guess(polygon_terra)
     result_geos <-
-      cnt_path_guess(geos::as_geos_geometry(polygon))
+      cnt_path_guess(polygon_geos)
 
     # Find centerline lengths
     result_length <-
@@ -44,13 +46,54 @@ test_that(
     expect_true(
       inherits(result_spat, c("SpatVector"))
     )
+    # Check CRS
+    expect_true(
+      wk::wk_crs(result_geos) == wk::wk_crs(polygon_geos)
+    )
+    expect_true(
+      sf::st_crs(result_sf) == sf::st_crs(polygon)
+    )
+    expect_true(
+      terra::crs(result_spat) == terra::crs(polygon_terra)
+    )
+  }
+)
+
+test_that(
+  "cnt_path_guess can have inputs of various classes",
+  {
+    polygon <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "polygon",
+        quiet = TRUE
+      )
+    skeleton <- cnt_skeleton(polygon)
+    skeleton_geos <- geos::as_geos_geometry(skeleton)
+    skeleton_terra <- terra::vect(skeleton)
+
+    # Find polygon's longest path
+    result_sf <-
+      cnt_path_guess(polygon, skeleton)
+    result_spat <-
+      cnt_path_guess(polygon, skeleton_terra)
+    result_geos <-
+      cnt_path_guess(polygon, skeleton_geos)
+
+    expect_equal(
+      result_sf,
+      result_geos
+    )
+    expect_equal(
+      result_sf,
+      result_spat
+    )
   }
 )
 
 # Test Output Structure
 test_that(
-  "cnt_path_guess returns a list of correct class objects
-  with LINESTRING geometry",
+  "cnt_path_guess returns a LINESTRING geometry",
   {
     polygon <-
       sf::st_read(
@@ -62,12 +105,6 @@ test_that(
     # Find polygon's skeleton
     result <- cnt_path_guess(polygon)
 
-    expect_true(is.list(result))
-    expect_true(all(vapply(result, function(x) {
-      inherits(
-        x, c("sf", "sfc", "SpatVector")
-      )
-    }, logical(1))))
     # Check for LINESTRING geometry
     expect_true(all(
       vapply(result, function(x) {
@@ -79,7 +116,7 @@ test_that(
 
 # Test simplification/densification
 test_that(
-  "Path guessing works with any keep parameter",
+  "Path guessing works with any 'keep' parameter",
   {
     polygon <-
       sf::st_read(
