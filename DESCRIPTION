@@ -10,24 +10,23 @@ Authors@R:
              comment = c(ORCID = "0000-0003-4144-8402"))
     )
 Maintainer: Anatoly Tsyplenkov <atsyplenkov@fastmail.com>
-Description: The {centerline} R package simplifies the extraction of linear features from closed 2D polygons, such as lakes, by computing their centerlines (or median-axis) using Voronoi diagrams.
+Description: The {centerline} R package simplifies the extraction of linear 
+    features from closed 2D polygons, by computing their 
+    centerlines (or median-axis) using Voronoi diagrams.
 License: MIT + file LICENSE
 URL: https://github.com/atsyplenkov/centerline
 BugReports: https://github.com/atsyplenkov/centerline/issues
 Suggests:
-    geomtextpath,
     smoothr,
-    shiny (>= 1.9.1),
-    bslib (>= 0.8.0),
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    geomtextpath,
 Imports:
-    dplyr (>= 1.0),
-    geos (>= 0.2.4),
     wk (>= 0.9),
     sf (>= 1.0),
-    sfnetworks (>= 0.6),
+    geos (>= 0.2.4),
     terra (>= 1.7),
-    igraph (>= 2.0.0)
+    igraph (>= 2.0.0),
+    sfnetworks (>= 0.6)
 Config/testthat/edition: 3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

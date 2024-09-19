@@ -205,24 +205,29 @@ unique_points <-
       geos::as_geos_geometry(crs = wk::wk_crs(geos_obj))
   }
 
-# Skeletons ---------------------------------------------------------------
-# Skeleton to strtree
-skeleton_to_strtree <-
-  function(skeleton) {
-    if (!inherits(skeleton, "geos_geometry")) {
-      sk_crs <- sf::st_crs(skeleton)
-      skeleton <- geos::as_geos_geometry(skeleton)
+# Reverse lines if needed ------------------------------------------------
+# Check if we need to reverse the lines
+reverse_lines_if_needed <-
+  function(lines_list_geos, end_point) {
+    start_centerline <- geos::geos_point_start(lines_list_geos[[1]])
+    end_centerline <- geos::geos_point_end(lines_list_geos[[1]])
+    end_geos <- geos::as_geos_geometry(end_point)
+
+    start_tail <- geos::geos_distance(end_geos, start_centerline)
+    end_tail <- geos::geos_distance(end_geos, end_centerline)
+
+    if (start_tail < end_tail) {
+      lines_list_geos |>
+        lapply(geos::geos_reverse) |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge)
     } else {
-      sk_crs <- wk::wk_crs(skeleton)
+      lines_list_geos |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge)
     }
-    skeleton |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = sk_crs) |>
-      geos::geos_strtree()
   }
+
 
 # Straight skeleton
 # straight_skeleton <-

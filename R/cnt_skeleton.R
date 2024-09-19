@@ -1,29 +1,33 @@
 #' Create a skeleton of a closed polygon object
 #'
-#' @param input \code{sf}, \code{sfc} or \code{SpatVector} polygons object
-#' @param keep numeric, proportion of points to retain (0.05-Inf; default 0.1).
+#' @param input \code{sf}, \code{sfc}, \code{SpatVector}, or \code{geos_geometry} polygons object
+#' @param keep numeric, proportion of points to retain (0.05-Inf; default 0.5).
 #' See Details.
 #'
 #' @details
-#' - If \code{keep} equals 1 (default), no transformation will occur. The
+#' - If \code{keep} equals 1, no transformation will occur. The
 #' function will use the original geometry to find the skeleton.
 #'
 #' - If the \code{keep} parameter is below 1, then the [geos::geos_simplify()]
 #' function will be used. So the original input
 #' geometry would be simplified, and the resulting skeleton will be cleaner but
 #' maybe more edgy.
-#' The current realisation of simplification is similar (but not identical) to
+#' The current realisation of simplification is similar (*but not identical*) to
 #' `rmapshaper::ms_simplify()` one with Douglas-Peuker algorithm. However,
-#' due to \code{geos} superpower, 50x times faster.
-#'
+#' due to \code{geos} superpower, it performs *ca.* 50x times faster.
+#' If you find that the built-in simplification algorithm performs poorly,
+#' try `rmapshaper::ms_simplify()` first and then find the polygon skeleton
+#' with `keep = 1`, i.e.
+#' \code{cnt_skeleton(rmapshaper::ms_simplify(polygon_sf), keep = 1)}
+#' 
 #' - If the \code{keep} is above 1, then the densification
 #' algorithm is applied using the [geos::geos_densify()] function. This may
 #'  produce a very large object if keep is set more than 2. However, the
 #'  resulting skeleton would potentially be more accurate.
 #'
+#' @return a \code{sf}, \code{sfc}, \code{SpatVector}
+#' or \code{geos_geometry} class object of a \code{LINESTRING} geometry
 #'
-#' @return An \code{sf}, \code{sfc} or \code{SpatVector} class
-#' object of a \code{LINESTRING} geometry
 #' @export
 #'
 #'
