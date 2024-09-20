@@ -1,4 +1,3 @@
-library(testthat)
 library(sf)
 library(terra)
 library(sfnetworks)

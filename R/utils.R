@@ -81,7 +81,7 @@ check_sf_polygon <- function(input) {
   }
 
   # Check if geometry type is POLYGON
-  geom_type <- sf::st_geometry_type(input, by_geometry = FALSE)
+  geom_type <- sf::st_geometry_type(input, by_geometry = TRUE)
   if (!all(geom_type %in% c("POLYGON"))) {
     stop("Input does not contain 'POLYGON' geometries.")
   }
@@ -241,6 +241,49 @@ reverse_lines_if_needed <-
         lapply(geos::geos_make_collection) |>
         lapply(geos::geos_line_merge)
     }
+  }
+
+# Outer nodes of the skeleton --------------------------------------------
+# Faster alternative to igraph::centr_betw()
+find_outer_nodes <-
+  function(skeleton_geos) {
+    all_index <- geos::geos_strtree(skeleton_geos)
+
+    start_points <- geos::geos_point_start(skeleton_geos)
+    end_points <- geos::geos_point_end(skeleton_geos)
+
+    start_intersects <- geos::geos_intersects_matrix(start_points, all_index)
+    end_intersects <- geos::geos_intersects_matrix(end_points, all_index)
+
+    lonely_start <- start_points[
+      vapply(
+        start_intersects,
+        FUN = function(x) length(x) == 1,
+        FUN.VALUE = logical(1),
+        USE.NAMES = FALSE
+      )
+    ]
+    lonely_end <- end_points[
+      vapply(
+        end_intersects,
+        FUN = function(x) length(x) == 1,
+        FUN.VALUE = logical(1),
+        USE.NAMES = FALSE
+      )
+    ]
+
+    c(lonely_end, lonely_start)
+  }
+
+find_closest_nodes <-
+  function(sf_graph, nodes_geos) {
+    geos_graph <-
+      sfnetworks::activate(sf_graph, "nodes") |>
+      sf::st_as_sf() |>
+      geos::as_geos_geometry() |>
+      geos::geos_strtree()
+
+    geos::geos_nearest(nodes_geos, geos_graph)
   }
 
 

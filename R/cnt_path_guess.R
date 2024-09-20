@@ -202,18 +202,24 @@ cnt_path_guess_master <-
         edges_as_lines = TRUE
       )
     # Convert sfnetworks to igraph
-    pol_graph <- igraph::as.igraph(pol_network)
-    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    # pol_graph <- igraph::as.igraph(pol_network)
+    df_graph <- igraph::as_data_frame(pol_network)
+    names(df_graph)[3] <- "geometry"
+    df_graph <- df_graph[, c("weight", "geometry")]
     df_graph$weight <- as.numeric(df_graph$weight)
 
     # Find border points of skeleton
-    closest_points <- which(igraph::centr_betw(pol_graph)$res == 0)
+    closest_points <-
+      find_closest_nodes(
+        pol_network,
+        find_outer_nodes(geos::as_geos_geometry(skeleton_sf))
+      )
 
     # Find the most distant point from center
     # It will serve as the end point
     closest_end_points <-
       closest_points[which.min(
-        igraph::closeness(pol_graph, vid = closest_points)
+        igraph::closeness(pol_network, vid = closest_points)
       )]
 
     # Find paths

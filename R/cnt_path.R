@@ -208,8 +208,9 @@ cnt_path_master <-
       )
 
     # Convert sfnetworks to igraph
-    pol_graph <- igraph::as.igraph(pol_network)
-    df_graph <- igraph::as_data_frame(pol_graph)[, c("weight", "geometry")]
+    df_graph <- igraph::as_data_frame(pol_network)
+    names(df_graph)[3] <- "geometry"
+    df_graph <- df_graph[, c("weight", "geometry")]
     df_graph$weight <- as.numeric(df_graph$weight)
 
     # Find indices of nearest nodes for start ...
