@@ -54,7 +54,7 @@ cnt_path_guess.geos_geometry <-
            skeleton = NULL,
            ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
-    stopifnot(check_geos_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- wk::wk_crs(input)
@@ -91,7 +91,7 @@ cnt_path_guess.sf <-
            skeleton = NULL,
            ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
-    stopifnot(check_sf_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- sf::st_crs(input)
@@ -126,7 +126,7 @@ cnt_path_guess.sfc <-
            skeleton = NULL,
            ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
-    stopifnot(check_sf_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- sf::st_crs(input)
@@ -160,7 +160,7 @@ cnt_path_guess.SpatVector <-
            skeleton = NULL,
            ...) {
     # Check if input is of class 'SpatVector' and 'polygons'
-    stopifnot(check_terra_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- terra::crs(input)

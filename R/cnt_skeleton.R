@@ -67,7 +67,7 @@ cnt_skeleton.sf <-
   function(input,
            keep = 0.5) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
-    stopifnot(check_sf_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Save CRS
     crs <-
@@ -93,7 +93,7 @@ cnt_skeleton.sfc <-
   function(input,
            keep = 0.5) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
-    stopifnot(check_sf_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Save CRS
     crs <-
@@ -119,7 +119,7 @@ cnt_skeleton.SpatVector <-
   function(input,
            keep = 0.5) {
     # Check if input is of class 'SpatVector' and 'polygons'
-    stopifnot(check_terra_polygon(input))
+    stopifnot(check_polygons(input))
 
     # Transform to GEOS geometry
     input_geos <-

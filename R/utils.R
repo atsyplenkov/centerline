@@ -56,107 +56,79 @@ check_same_class <- function(obj1, obj2, obj3) {
   }
 }
 
-# GEOS polygon checks
-check_geos_polygon <- function(input) {
-  # Check if input is of class 'geos_geometry'
-  if (!inherits(input, "geos_geometry")) {
-    stop("Input is not of class 'geos_geometry'.")
+get_geom_type <-
+  function(input) {
+    if (inherits(input, "sf") || inherits(input, "sfc")) {
+      sf::st_geometry_type(input, by_geometry = TRUE)
+    } else if (inherits(input, "SpatVector")) {
+      terra::geomtype(input)
+    } else if (inherits(input, "geos_geometry")) {
+      geos::geos_type(input)
+    }
+  }
+
+
+# Checks for polygon geometries
+check_polygons <- function(input) {
+  # Check if input is of class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'
+  if (!inherits(input, c("sf", "sfc", "SpatVector", "geos_geometry"))) {
+    stop(
+      "Input is not of
+      class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'."
+    )
   }
 
   # Check if geometry type is POLYGON
-  geom_type <- geos::geos_type(input)
-  if (!all(geom_type %in% c("polygon"))) {
-    stop("Input does not contain 'polygon' geometries.")
+  geom_type <- get_geom_type(input)
+  if (!all(geom_type %in% c("POLYGON", "polygons", "polygon"))) {
+    stop("Input does not contain 'POLYGON' or 'polygons' geometries.")
   }
 
   # If checks pass
   return(TRUE)
 }
 
-# sf polygon checks
-check_sf_polygon <- function(input) {
-  # Check if input is of class 'sf'
-  if (!inherits(input, "sf") && !inherits(input, "sfc")) {
-    stop("Input is not of class 'sf' or 'sfc'.")
-  }
-
-  # Check if geometry type is POLYGON
-  geom_type <- sf::st_geometry_type(input, by_geometry = TRUE)
-  if (!all(geom_type %in% c("POLYGON"))) {
-    stop("Input does not contain 'POLYGON' geometries.")
-  }
-
-  # If checks pass
-  return(TRUE)
-}
-
-# terra polygon checks
-check_terra_polygon <- function(input) {
-  # Check if input is of class 'SpatVector'
-  if (!inherits(input, "SpatVector")) {
-    stop("Input is not of class 'SpatVector'.")
-  }
-
-  # Check if geometry type is POLYGON
-  geom_type <- terra::geomtype(input)
-  if (!all(geom_type %in% c("polygons"))) {
-    stop("Input does not contain 'polygons' geometries.")
-  }
-
-  # If checks pass
-  return(TRUE)
-}
-
-# sf linestring checks
-check_sf_lines <- function(input) {
-  # Check if input is of class 'sf'
-  if (!inherits(input, "sf") && !inherits(input, "sfc")) {
-    stop("Input is not of class 'sf' or 'sfc'.")
-  }
-
-  # Check if geometry type is POLYGON
-  geom_type <- sf::st_geometry_type(input)
-  if (!all(geom_type %in% c("LINESTRING"))) {
-    stop("Input does not contain 'LINESTRING' geometries.")
-  }
-
-  # If checks pass
-  return(TRUE)
-}
-
-# GEOS linestring checks
-check_geos_lines <- function(input) {
-  # Check if input is of class 'geos_geometry'
-  if (!inherits(input, "geos_geometry")) {
-    stop("Input is not of class 'geos_geometry'.")
+# Checks for linestring geometries
+check_lines <- function(input) {
+  # Check if input is of class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'
+  if (!inherits(input, c("sf", "sfc", "SpatVector", "geos_geometry"))) {
+    stop(
+      "Input skeleton is not of
+      class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'."
+    )
   }
 
   # Check if geometry type is LINESTRING
-  geom_type <- geos::geos_type(input)
-  if (!all(geom_type %in% c("linestring"))) {
-    stop("Input does not contain 'LINESTRING' geometries.")
+  geom_type <- get_geom_type(input)
+  if (!all(geom_type %in% c("LINESTRING", "lines", "linestring"))) {
+    stop("Input skeleton does not contain 'LINESTRING' geometry.")
   }
 
   # If checks pass
   return(TRUE)
 }
 
-# terra linestring checks
-check_terra_lines <- function(input) {
-  # Check if input is of class 'sf'
-  if (!inherits(input, "SpatVector")) {
-    stop("Input is not of class 'SpatVector'.")
+# Checks for points geometries
+check_points <- function(input) {
+  # Check if input is of class 'sf', 'sfc',
+  # 'SpatVector', or 'geos_geometry'
+  if (!inherits(input, c("sf", "sfc", "SpatVector", "geos_geometry"))) {
+    stop(
+      "Input point is not of
+      class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'."
+    )
   }
 
-  # Check if geometry type is POLYGON
-  geom_type <- terra::geomtype(input)
-  if (!all(geom_type %in% c("lines"))) {
-    stop("Input does not contain 'lines' geometries.")
+  # Check if geometry type is POINT
+  geom_type <- get_geom_type(input)
+  if (!all(geom_type %in% c("POINT", "points", "point"))) {
+    stop("Input point does not contain 'POINT' geometry.")
   }
 
   # If checks pass
   return(TRUE)
 }
+
 
 # Polygon simplifications ------------------------------------------------
 # Fast simplification, similiar to {mapshaper} ms_simplify

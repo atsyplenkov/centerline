@@ -77,11 +77,26 @@ cnt_path.geos_geometry <-
   function(skeleton,
            start_point,
            end_point) {
-    cnt_path_geos(
-      skeleton = skeleton,
-      start_point = start_point,
-      end_point = end_point
+    # Check input classes
+    stopifnot(check_lines(skeleton))
+    stopifnot(check_points(start_point))
+    stopifnot(check_points(end_point))
+    check_same_class(
+      skeleton,
+      start_point,
+      end_point
     )
+
+    # Transform to sf
+    skeleton <-
+      sf::st_as_sf(skeleton)
+    start_point <-
+      sf::st_as_sf(start_point)
+    end_point <-
+      sf::st_as_sf(end_point)
+
+    # Find the paths
+    cnt_path_master(skeleton, start_point, end_point)
   }
 
 #' @export
@@ -89,11 +104,20 @@ cnt_path.sf <-
   function(skeleton,
            start_point,
            end_point) {
-    cnt_path_sf(
-      skeleton = skeleton,
-      start_point = start_point,
-      end_point = end_point
+    # Check input classes
+    stopifnot(check_lines(skeleton))
+    stopifnot(check_points(start_point))
+    stopifnot(check_points(end_point))
+    check_same_class(
+      skeleton,
+      start_point,
+      end_point
     )
+
+    # Find the paths
+    cnt_path_master(skeleton, start_point, end_point) |>
+      sf::st_as_sf() |>
+      cbind(sf::st_drop_geometry(start_point))
   }
 
 #' @export
@@ -101,11 +125,14 @@ cnt_path.sfc <-
   function(skeleton,
            start_point,
            end_point) {
-    cnt_path_sf(
-      skeleton = skeleton,
-      start_point = start_point,
-      end_point = end_point
-    )
+    # Check input classes
+    stopifnot(check_lines(skeleton))
+    stopifnot(check_points(start_point))
+    stopifnot(check_points(end_point))
+
+    # Find the paths
+    cnt_path_master(skeleton, start_point, end_point) |>
+      sf::st_as_sfc()
   }
 
 #' @export
@@ -113,20 +140,10 @@ cnt_path.SpatVector <-
   function(skeleton,
            start_point,
            end_point) {
-    cnt_path_terra(
-      skeleton = skeleton,
-      start_point = start_point,
-      end_point = end_point
-    )
-  }
-
-
-cnt_path_terra <-
-  function(skeleton,
-           start_point,
-           end_point) {
-    # Check if input is of class 'SpatVector' and 'lines'
-    stopifnot(check_terra_lines(skeleton))
+    # Check input classes
+    stopifnot(check_lines(skeleton))
+    stopifnot(check_points(start_point))
+    stopifnot(check_points(end_point))
     check_same_class(
       skeleton,
       start_point,
@@ -152,47 +169,6 @@ cnt_path_terra <-
       cbind(sf::st_drop_geometry(start_point))
   }
 
-cnt_path_sf <-
-  function(skeleton,
-           start_point,
-           end_point) {
-    # Check if input is of class 'sf' and 'LINESTRING'
-    stopifnot(check_sf_lines(skeleton))
-    check_same_class(
-      skeleton,
-      start_point,
-      end_point
-    )
-
-    # Find the paths
-    cnt_path_master(skeleton, start_point, end_point) |>
-      sf::st_as_sf() |>
-      cbind(sf::st_drop_geometry(start_point))
-  }
-
-cnt_path_geos <-
-  function(skeleton,
-           start_point,
-           end_point) {
-    # Check if input is of class 'geos_geometry' and 'LINESTRING'
-    stopifnot(check_geos_lines(skeleton))
-    check_same_class(
-      skeleton,
-      start_point,
-      end_point
-    )
-
-    # Transform to sf
-    skeleton <-
-      sf::st_as_sf(skeleton)
-    start_point <-
-      sf::st_as_sf(start_point)
-    end_point <-
-      sf::st_as_sf(end_point)
-
-    # Find the paths
-    cnt_path_master(skeleton, start_point, end_point)
-  }
 
 cnt_path_master <-
   function(skeleton_sf,
