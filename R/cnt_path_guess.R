@@ -150,7 +150,7 @@ cnt_path_guess.sfc <-
 
     # Find the longest path
     cnt_path_guess_master(skeleton_sf) |>
-      sf::st_as_sf() |>
+      sf::st_as_sfc() |>
       sf::st_set_crs(crs)
   }
 

@@ -100,16 +100,33 @@ test_that(
         layer = "polygon",
         quiet = TRUE
       )
+    polygon_sfc <- sf::st_as_sfc(polygon)
+    polygon_geos <- geos::as_geos_geometry(polygon)
+    polygon_terra <- terra::vect(polygon)
 
     # Find polygon's skeleton
-    result <- cnt_path_guess(polygon)
+    result_sf <- cnt_path_guess(polygon)
+    result_sfc <- cnt_path_guess(polygon_sfc)
+    result_geos <- cnt_path_guess(polygon_geos)
+    result_spat <- cnt_path_guess(polygon_terra)
 
-    # Check for LINESTRING geometry
-    expect_true(all(
-      vapply(result, function(x) {
-        sf::st_geometry_type(x) == "LINESTRING"
-      }, logical(1))
-    ))
+    # Compare results
+    expect_length(result_spat, 1)
+    expect_length(result_geos, 1)
+    expect_length(result_sf, 1)
+    expect_length(result_sfc, 1)
+
+    # Compare output classes
+    expect_true(inherits(result_sf, c("sf")))
+    expect_true(inherits(result_sfc, c("sfc")))
+    expect_true(inherits(result_spat, c("SpatVector")))
+    expect_true(inherits(result_geos, c("geos_geometry")))
+
+    # Check geometry types
+    expect_contains(get_geom_type(result_sf), "LINESTRING")
+    expect_contains(get_geom_type(result_sfc), "LINESTRING")
+    expect_contains(get_geom_type(result_spat), "lines")
+    expect_contains(get_geom_type(result_geos), "linestring")
   }
 )
 
@@ -136,7 +153,19 @@ test_that(
         )
       })
 
-    # Check that all paths are not NA
+    # Estimate lengths
+    test_lengths <-
+      vapply(
+        test_list, sf::st_length,
+        FUN.VALUE = numeric(1),
+        USE.NAMES = FALSE
+      )
+
+    # Check that all paths are not NA nor NULL nor zero
     expect_true(all(!is.na(test_list)))
+    expect_true(all(!is.null(test_lengths)))
+    expect_true(all(test_lengths > 0))
+    expect_vector(test_lengths, ptype = double(), size = 20)
+    expect_gt(length(unique(test_lengths)), 1)
   }
 )
