@@ -16,20 +16,20 @@ class as the \code{skeleton} parameter}
 \code{start_point} parameters.}
 }
 \value{
-a list of \code{sf}, \code{sfc} or \code{SpatVector} class
-objects of a \code{LINESTRING} geometry
+a list of \code{sf}, \code{sfc}, \code{SpatVector}
+or \code{geos_geometry} class objects of a \code{LINESTRING} geometry
 }
 \description{
 Find the shortest path between start and end points within a polygon
 }
 \details{
 The following function uses the \code{\link[sfnetworks:st_network_paths]{sfnetworks::st_network_paths()}} approach to
-connect \code{start_point} with \code{end_point} by employing the
+connect \code{start_point} with \code{end_point} by using the
 \code{skeleton} of a closed polygon as potential routes.
 
 It is important to note that multiple starting points are permissible,
-but there can only be one ending point. Should there be two or more
-ending points, the algorithm will generate an error.
+but there can only be \strong{one ending point}. Should there be two or more
+ending points, the algorithm will return an error.
 
 Neither starting nor ending points are required to be located
 on the edges of a polygon (i.e., snapped to the boundary);
@@ -40,16 +40,13 @@ to the starting and ending points and then connects them
 using the shortest path possible along the skeleton.
 Therefore, if more precise placement of start and end
 points is necessary, consider executing the \code{\link[=cnt_skeleton]{cnt_skeleton()}}
-function with the \code{simplify = FALSE} option. In doing so, the resulting
+function with the \code{keep = 1} option. In doing so, the resulting
 skeleton may be more detailed, increasing the likelihood that the starting
 and ending points are already situated on the skeleton paths.
 }
 \examples{
-\dontrun{
 
 library(terra)
-library(centerline)
-
 # Load Polygon and points data
 polygon <-
   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
@@ -75,9 +72,8 @@ pol_path <-
 
 # Plot
 plot(polygon)
-plot(pol_skeleton, col = "blue", add = T)
-plot(points[1:2, ], col = "red", add = T)
-plot(pol_path[[1]], lwd = 3, add = T)
-}
+plot(pol_skeleton, col = "blue", add = TRUE)
+plot(points[1:2, ], col = "red", add = TRUE)
+plot(pol_path[1, ], lwd = 3, add = TRUE)
 
 }

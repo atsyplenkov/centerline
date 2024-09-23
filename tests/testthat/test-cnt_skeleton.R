@@ -30,10 +30,17 @@ test_that("cnt_skeleton returns same class as input", {
   result_terra <- cnt_skeleton(polygon_terra, keep = 1)
   result_geos <- cnt_skeleton(polygon_geos, keep = 1)
 
+  # Check class
   expect_s3_class(result_sfc, c("sfc"))
   expect_s3_class(result_sf, c("sf"))
   expect_s4_class(result_terra, c("SpatVector"))
   expect_s3_class(result_geos, c("geos_geometry"))
+
+  # Check geometry types
+  expect_contains(get_geom_type(result_sf), "LINESTRING")
+  expect_contains(get_geom_type(result_sfc), "LINESTRING")
+  expect_contains(get_geom_type(result_terra), "lines")
+  expect_contains(get_geom_type(result_geos), "linestring")
 })
 
 test_that("'keep' parameter affects the output", {
@@ -83,3 +90,31 @@ test_that("cnt_skeleton errors on incorrect input types", {
     cnt_skeleton("not an sf object")
   )
 })
+
+# Test simplification/densification
+test_that(
+  "cnt_skeleton works with any 'keep' parameter",
+  {
+    polygon <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "shapes",
+        quiet = TRUE
+      )
+    polygon$id <- seq_len(nrow(polygon))
+    polygon21 <- subset(polygon, id == 21)
+
+    # Test that all paths are created without errors
+    # With keep parameter varying from 0 to 2
+    test_list <-
+      lapply(seq(0.1, 2, by = 0.1), function(x) {
+        tryCatch(
+          cnt_skeleton(polygon21, keep = x),
+          error = \(e) NA
+        )
+      })
+
+    # Check that all paths are not NA
+    expect_true(all(!is.na(test_list)))
+  }
+)

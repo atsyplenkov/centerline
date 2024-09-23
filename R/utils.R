@@ -41,107 +41,94 @@ geos_to_terra <-
   }
 
 # Class checks -----------------------------------------------------------
-# GEOS polygon checks
-check_geos_polygon <- function(input) {
-  # Check if input is of class 'geos_geometry'
-  if (!inherits(input, "geos_geometry")) {
-    stop("Input is not of class 'geos_geometry'.")
+# Check that all objects share the same class
+check_same_class <- function(obj1, obj2, obj3) {
+  class1 <- class(obj1)
+  class2 <- class(obj2)
+  class3 <- class(obj3)
+
+  class_check <-
+    base::identical(class1, class2) &&
+      base::identical(class1, class3)
+
+  if (!class_check) {
+    stop("All objects must share the same class.")
+  }
+}
+
+get_geom_type <-
+  function(input) {
+    if (inherits(input, "sf") || inherits(input, "sfc")) {
+      sf::st_geometry_type(input, by_geometry = TRUE)
+    } else if (inherits(input, "SpatVector")) {
+      terra::geomtype(input)
+    } else if (inherits(input, "geos_geometry")) {
+      geos::geos_type(input)
+    }
+  }
+
+
+# Checks for polygon geometries
+check_polygons <- function(input) {
+  # Check if input is of class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'
+  if (!inherits(input, c("sf", "sfc", "SpatVector", "geos_geometry"))) {
+    stop(
+      "Input is not of
+      class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'."
+    )
   }
 
   # Check if geometry type is POLYGON
-  geom_type <- geos::geos_type(input)
-  if (!all(geom_type %in% c("polygon"))) {
-    stop("Input does not contain 'polygon' geometries.")
+  geom_type <- get_geom_type(input)
+  if (!all(geom_type %in% c("POLYGON", "polygons", "polygon"))) {
+    stop("Input does not contain 'POLYGON' or 'polygons' geometries.")
   }
 
   # If checks pass
   return(TRUE)
 }
 
-# sf polygon checks
-check_sf_polygon <- function(input) {
-  # Check if input is of class 'sf'
-  if (!inherits(input, "sf") && !inherits(input, "sfc")) {
-    stop("Input is not of class 'sf' or 'sfc'.")
-  }
-
-  # Check if geometry type is POLYGON
-  geom_type <- sf::st_geometry_type(input, by_geometry = FALSE)
-  if (!all(geom_type %in% c("POLYGON"))) {
-    stop("Input does not contain 'POLYGON' geometries.")
-  }
-
-  # If checks pass
-  return(TRUE)
-}
-
-# terra polygon checks
-check_terra_polygon <- function(input) {
-  # Check if input is of class 'SpatVector'
-  if (!inherits(input, "SpatVector")) {
-    stop("Input is not of class 'SpatVector'.")
-  }
-
-  # Check if geometry type is POLYGON
-  geom_type <- terra::geomtype(input)
-  if (!all(geom_type %in% c("polygons"))) {
-    stop("Input does not contain 'polygons' geometries.")
-  }
-
-  # If checks pass
-  return(TRUE)
-}
-
-# sf linestring checks
-check_sf_lines <- function(input) {
-  # Check if input is of class 'sf'
-  if (!inherits(input, "sf") && !inherits(input, "sfc")) {
-    stop("Input is not of class 'sf' or 'sfc'.")
-  }
-
-  # Check if geometry type is POLYGON
-  geom_type <- sf::st_geometry_type(input)
-  if (!all(geom_type %in% c("LINESTRING"))) {
-    stop("Input does not contain 'LINESTRING' geometries.")
-  }
-
-  # If checks pass
-  return(TRUE)
-}
-
-# GEOS linestring checks
-check_geos_lines <- function(input) {
-  # Check if input is of class 'geos_geometry'
-  if (!inherits(input, "geos_geometry")) {
-    stop("Input is not of class 'geos_geometry'.")
+# Checks for linestring geometries
+check_lines <- function(input) {
+  # Check if input is of class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'
+  if (!inherits(input, c("sf", "sfc", "SpatVector", "geos_geometry"))) {
+    stop(
+      "Input skeleton is not of
+      class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'."
+    )
   }
 
   # Check if geometry type is LINESTRING
-  geom_type <- geos::geos_type(input)
-  if (!all(geom_type %in% c("linestring"))) {
-    stop("Input does not contain 'LINESTRING' geometries.")
+  geom_type <- get_geom_type(input)
+  if (!all(geom_type %in% c("LINESTRING", "lines", "linestring"))) {
+    stop("Input skeleton does not contain 'LINESTRING' geometry.")
   }
 
   # If checks pass
   return(TRUE)
 }
 
-# terra linestring checks
-check_terra_lines <- function(input) {
-  # Check if input is of class 'sf'
-  if (!inherits(input, "SpatVector")) {
-    stop("Input is not of class 'SpatVector'.")
+# Checks for points geometries
+check_points <- function(input) {
+  # Check if input is of class 'sf', 'sfc',
+  # 'SpatVector', or 'geos_geometry'
+  if (!inherits(input, c("sf", "sfc", "SpatVector", "geos_geometry"))) {
+    stop(
+      "Input point is not of
+      class 'sf', 'sfc', 'SpatVector', or 'geos_geometry'."
+    )
   }
 
-  # Check if geometry type is POLYGON
-  geom_type <- terra::geomtype(input)
-  if (!all(geom_type %in% c("lines"))) {
-    stop("Input does not contain 'lines' geometries.")
+  # Check if geometry type is POINT
+  geom_type <- get_geom_type(input)
+  if (!all(geom_type %in% c("POINT", "points", "point"))) {
+    stop("Input point does not contain 'POINT' geometry.")
   }
 
   # If checks pass
   return(TRUE)
 }
+
 
 # Polygon simplifications ------------------------------------------------
 # Fast simplification, similiar to {mapshaper} ms_simplify
@@ -205,24 +192,72 @@ unique_points <-
       geos::as_geos_geometry(crs = wk::wk_crs(geos_obj))
   }
 
-# Skeletons ---------------------------------------------------------------
-# Skeleton to strtree
-skeleton_to_strtree <-
-  function(skeleton) {
-    if (!inherits(skeleton, "geos_geometry")) {
-      sk_crs <- sf::st_crs(skeleton)
-      skeleton <- geos::as_geos_geometry(skeleton)
+# Reverse lines if needed ------------------------------------------------
+# Check if we need to reverse the lines
+reverse_lines_if_needed <-
+  function(lines_list_geos, end_point) {
+    start_centerline <- geos::geos_point_start(lines_list_geos[[1]])
+    end_centerline <- geos::geos_point_end(lines_list_geos[[1]])
+    end_geos <- geos::as_geos_geometry(end_point)
+
+    start_tail <- geos::geos_distance(end_geos, start_centerline)
+    end_tail <- geos::geos_distance(end_geos, end_centerline)
+
+    if (start_tail < end_tail) {
+      lines_list_geos |>
+        lapply(geos::geos_reverse) |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge)
     } else {
-      sk_crs <- wk::wk_crs(skeleton)
+      lines_list_geos |>
+        lapply(geos::geos_make_collection) |>
+        lapply(geos::geos_line_merge)
     }
-    skeleton |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = sk_crs) |>
-      geos::geos_strtree()
   }
+
+# Outer nodes of the skeleton --------------------------------------------
+# Faster alternative to igraph::centr_betw()
+find_outer_nodes <-
+  function(skeleton_geos) {
+    all_index <- geos::geos_strtree(skeleton_geos)
+
+    start_points <- geos::geos_point_start(skeleton_geos)
+    end_points <- geos::geos_point_end(skeleton_geos)
+
+    start_intersects <- geos::geos_intersects_matrix(start_points, all_index)
+    end_intersects <- geos::geos_intersects_matrix(end_points, all_index)
+
+    lonely_start <- start_points[
+      vapply(
+        start_intersects,
+        FUN = function(x) length(x) == 1,
+        FUN.VALUE = logical(1),
+        USE.NAMES = FALSE
+      )
+    ]
+    lonely_end <- end_points[
+      vapply(
+        end_intersects,
+        FUN = function(x) length(x) == 1,
+        FUN.VALUE = logical(1),
+        USE.NAMES = FALSE
+      )
+    ]
+
+    c(lonely_end, lonely_start)
+  }
+
+find_closest_nodes <-
+  function(sf_graph, nodes_geos) {
+    geos_graph <-
+      sfnetworks::activate(sf_graph, "nodes") |>
+      sf::st_as_sf() |>
+      geos::as_geos_geometry() |>
+      geos::geos_strtree()
+
+    geos::geos_nearest(nodes_geos, geos_graph)
+  }
+
 
 # Straight skeleton
 # straight_skeleton <-

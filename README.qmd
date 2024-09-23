@@ -27,6 +27,7 @@ requireNamespace("smoothr", quietly = TRUE)
 [![CRAN status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
 ![GitHub R package version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline)
 ![GitHub last commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline)
+[![Codecov test coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features from complex polygons, such as roads or rivers, by computing their centerlines (or median-axis) using Voronoi diagrams. It uses the super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) library in the background.

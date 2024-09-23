@@ -16,7 +16,7 @@ using specified parameters (see inherit params below).}
 \item{...}{
   Arguments passed on to \code{\link[=cnt_skeleton]{cnt_skeleton}}
   \describe{
-    \item{\code{keep}}{numeric, proportion of points to retain (0.05-Inf; default 0.1).
+    \item{\code{keep}}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
 See Details.}
   }}
 }
@@ -46,7 +46,7 @@ plot(lake)
 
 cnt_path_guess(
   input = lake,
-  keep = 1.1
+  keep = 1
 ) |>
   plot(
     col = "firebrick",
