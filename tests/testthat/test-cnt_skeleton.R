@@ -30,10 +30,17 @@ test_that("cnt_skeleton returns same class as input", {
   result_terra <- cnt_skeleton(polygon_terra, keep = 1)
   result_geos <- cnt_skeleton(polygon_geos, keep = 1)
 
+  # Check class
   expect_s3_class(result_sfc, c("sfc"))
   expect_s3_class(result_sf, c("sf"))
   expect_s4_class(result_terra, c("SpatVector"))
   expect_s3_class(result_geos, c("geos_geometry"))
+
+  # Check geometry types
+  expect_contains(get_geom_type(result_sf), "LINESTRING")
+  expect_contains(get_geom_type(result_sfc), "LINESTRING")
+  expect_contains(get_geom_type(result_terra), "lines")
+  expect_contains(get_geom_type(result_geos), "linestring")
 })
 
 test_that("'keep' parameter affects the output", {

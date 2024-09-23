@@ -95,18 +95,10 @@ test_that(
     # Compare lengths
     expect_true(all(result_length >= result_length[1]))
     # Check class
-    expect_true(
-      inherits(result_geos, c("geos_geometry"))
-    )
-    expect_true(
-      inherits(result_sf, c("sf"))
-    )
-    expect_true(
-      inherits(result_sfc, c("sfc"))
-    )
-    expect_true(
-      inherits(result_terra, c("SpatVector"))
-    )
+    expect_s3_class(result_sfc, c("sfc"))
+    expect_s3_class(result_sf, c("sf"))
+    expect_s4_class(result_terra, c("SpatVector"))
+    expect_s3_class(result_geos, c("geos_geometry"))
     # Check CRS
     expect_true(
       wk::wk_crs(result_geos) == wk::wk_crs(polygon_geos)

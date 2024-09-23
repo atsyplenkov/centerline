@@ -70,12 +70,10 @@ cnt_skeleton.sf <-
     stopifnot(check_polygons(input))
 
     # Save CRS
-    crs <-
-      sf::st_crs(input)
+    crs <- sf::st_crs(input)
 
     # Transform to GEOS geometry
-    input_geos <-
-      geos::as_geos_geometry(input)
+    input_geos <- geos::as_geos_geometry(input)
 
     # Find GEOS skeleton
     pol_skeleton <-
@@ -96,12 +94,10 @@ cnt_skeleton.sfc <-
     stopifnot(check_polygons(input))
 
     # Save CRS
-    crs <-
-      sf::st_crs(input)
+    crs <- sf::st_crs(input)
 
     # Transform to GEOS geometry
-    input_geos <-
-      geos::as_geos_geometry(input)
+    input_geos <- geos::as_geos_geometry(input)
 
     # Find GEOS skeleton
     pol_skeleton <-
