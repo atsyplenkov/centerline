@@ -15,6 +15,8 @@ status](https://www.r-pkg.org/badges/version/centerline.png)](https://CRAN.R-pro
 version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline.png)
 ![GitHub last
 commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline.png)
+[![Codecov test
+coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features
