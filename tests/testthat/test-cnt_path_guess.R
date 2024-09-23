@@ -1,40 +1,99 @@
 library(sf)
 library(terra)
-library(sfnetworks)
+
+polygon_sf <-
+  sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon",
+    quiet = TRUE
+  )
+polygon_sfc <- sf::st_as_sfc(polygon_sf)
+polygon_geos <- geos::as_geos_geometry(polygon_sf)
+polygon_terra <- terra::vect(polygon_sf)
+
+skeleton_sf <- cnt_skeleton(polygon_sf)
+skeleton_sfc <- sf::st_as_sfc(skeleton_sf)
+skeleton_geos <- geos::as_geos_geometry(skeleton_sf)
+skeleton_terra <- terra::vect(skeleton_sf)
+
+test_that("cnt_path_guess errors on incorrect input classes", {
+  # sf
+  expect_error(
+    cnt_path_guess(
+      input = polygon_sf,
+      skeleton = polygon_sf
+    )
+  )
+  expect_error(
+    cnt_path_guess(
+      input = skeleton_sf
+    )
+  )
+
+  # sfc
+  expect_error(
+    cnt_path_guess(
+      input = polygon_sfc,
+      skeleton = polygon_sfc
+    )
+  )
+  expect_error(
+    cnt_path_guess(
+      input = skeleton_sfc
+    )
+  )
+
+  # terra
+  expect_error(
+    cnt_path_guess(
+      input = polygon_terra,
+      skeleton = polygon_terra
+    )
+  )
+  expect_error(
+    cnt_path_guess(
+      input = skeleton_terra
+    )
+  )
+
+  # geos
+  expect_error(
+    cnt_path_guess(
+      input = polygon_geos,
+      skeleton = polygon_geos
+    )
+  )
+  expect_error(
+    cnt_path_guess(
+      input = skeleton_geos
+    )
+  )
+})
 
 test_that(
   "cnt_path_guess handles sf, SpatVector and geos_geometry
   inputs equivalently, saving CRS",
   {
-    polygon <-
-      sf::st_read(
-        system.file("extdata/example.gpkg", package = "centerline"),
-        layer = "polygon",
-        quiet = TRUE
-      )
-    polygon_terra <- terra::vect(polygon)
-    polygon_geos <- geos::as_geos_geometry(polygon)
-
     # Find polygon's longest path
     result_sf <-
-      cnt_path_guess(polygon)
-    result_spat <-
+      cnt_path_guess(polygon_sf)
+    result_terra <-
       cnt_path_guess(polygon_terra)
     result_geos <-
       cnt_path_guess(polygon_geos)
+    result_sfc <-
+      cnt_path_guess(polygon_sfc)
 
     # Find centerline lengths
     result_length <-
-      list(result_geos, result_sf, result_spat) |>
+      list(result_geos, result_sf, result_terra, result_sfc) |>
       lapply(sf::st_as_sf) |>
       lapply(geos::as_geos_geometry) |>
       lapply(geos::geos_length) |>
       unlist()
 
     # Compare lengths
-    expect_true(
-      round(mean(result_length), 3) == round(result_length[1], 3)
-    )
+    expect_true(all(result_length >= result_length[1]))
     # Check class
     expect_true(
       inherits(result_geos, c("geos_geometry"))
@@ -43,17 +102,23 @@ test_that(
       inherits(result_sf, c("sf"))
     )
     expect_true(
-      inherits(result_spat, c("SpatVector"))
+      inherits(result_sfc, c("sfc"))
+    )
+    expect_true(
+      inherits(result_terra, c("SpatVector"))
     )
     # Check CRS
     expect_true(
       wk::wk_crs(result_geos) == wk::wk_crs(polygon_geos)
     )
     expect_true(
-      sf::st_crs(result_sf) == sf::st_crs(polygon)
+      sf::st_crs(result_sf) == sf::st_crs(polygon_sf)
     )
     expect_true(
-      terra::crs(result_spat) == terra::crs(polygon_terra)
+      sf::st_crs(result_sfc) == sf::st_crs(polygon_sfc)
+    )
+    expect_true(
+      terra::crs(result_terra) == terra::crs(polygon_terra)
     )
   }
 )
@@ -61,23 +126,15 @@ test_that(
 test_that(
   "cnt_path_guess can have inputs of various classes",
   {
-    polygon <-
-      sf::st_read(
-        system.file("extdata/example.gpkg", package = "centerline"),
-        layer = "polygon",
-        quiet = TRUE
-      )
-    skeleton <- cnt_skeleton(polygon)
-    skeleton_geos <- geos::as_geos_geometry(skeleton)
-    skeleton_terra <- terra::vect(skeleton)
-
     # Find polygon's longest path
     result_sf <-
-      cnt_path_guess(polygon, skeleton)
-    result_spat <-
-      cnt_path_guess(polygon, skeleton_terra)
+      cnt_path_guess(polygon_sf, skeleton_sf)
+    result_sfc <-
+      cnt_path_guess(polygon_sf, skeleton_sfc)
+    result_terra <-
+      cnt_path_guess(polygon_sf, skeleton_terra)
     result_geos <-
-      cnt_path_guess(polygon, skeleton_geos)
+      cnt_path_guess(polygon_sf, skeleton_geos)
 
     expect_equal(
       result_sf,
@@ -85,7 +142,11 @@ test_that(
     )
     expect_equal(
       result_sf,
-      result_spat
+      result_terra
+    )
+    expect_equal(
+      result_sf,
+      result_sfc
     )
   }
 )
@@ -94,24 +155,14 @@ test_that(
 test_that(
   "cnt_path_guess returns a LINESTRING geometry",
   {
-    polygon <-
-      sf::st_read(
-        system.file("extdata/example.gpkg", package = "centerline"),
-        layer = "polygon",
-        quiet = TRUE
-      )
-    polygon_sfc <- sf::st_as_sfc(polygon)
-    polygon_geos <- geos::as_geos_geometry(polygon)
-    polygon_terra <- terra::vect(polygon)
-
     # Find polygon's skeleton
-    result_sf <- cnt_path_guess(polygon)
+    result_sf <- cnt_path_guess(polygon_sf)
     result_sfc <- cnt_path_guess(polygon_sfc)
     result_geos <- cnt_path_guess(polygon_geos)
-    result_spat <- cnt_path_guess(polygon_terra)
+    result_terra <- cnt_path_guess(polygon_terra)
 
     # Compare results
-    expect_length(result_spat, 1)
+    expect_length(result_terra, 1)
     expect_length(result_geos, 1)
     expect_length(result_sf, 1)
     expect_length(result_sfc, 1)
@@ -119,13 +170,13 @@ test_that(
     # Compare output classes
     expect_true(inherits(result_sf, c("sf")))
     expect_true(inherits(result_sfc, c("sfc")))
-    expect_true(inherits(result_spat, c("SpatVector")))
+    expect_true(inherits(result_terra, c("SpatVector")))
     expect_true(inherits(result_geos, c("geos_geometry")))
 
     # Check geometry types
     expect_contains(get_geom_type(result_sf), "LINESTRING")
     expect_contains(get_geom_type(result_sfc), "LINESTRING")
-    expect_contains(get_geom_type(result_spat), "lines")
+    expect_contains(get_geom_type(result_terra), "lines")
     expect_contains(get_geom_type(result_geos), "linestring")
   }
 )

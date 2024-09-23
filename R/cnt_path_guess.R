@@ -66,10 +66,13 @@ cnt_path_guess.geos_geometry <-
     if (base::is.null(skeleton)) {
       skeleton_sf <- cnt_skeleton(input = input_sf, ...)
     } else if (inherits(skeleton, "geos_geometry")) {
+      stopifnot(check_lines(skeleton))
       skeleton_sf <- sf::st_as_sf(skeleton)
     } else if (inherits(skeleton, "SpatVector")) {
+      stopifnot(check_lines(skeleton))
       skeleton_sf <- sf::st_as_sf(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
+      stopifnot(check_lines(skeleton))
       skeleton_sf <- skeleton
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
@@ -98,20 +101,19 @@ cnt_path_guess.sf <-
 
     # Find skeleton
     if (base::is.null(skeleton)) {
-      skeleton_sf <-
-        cnt_skeleton(input = input, ...)
+      skeleton_sf <- cnt_skeleton(input = input, ...)
     } else if (inherits(skeleton, "geos_geometry")) {
-      skeleton_sf <-
-        sf::st_as_sf(skeleton)
+      stopifnot(check_lines(skeleton))
+      skeleton_sf <- sf::st_as_sf(skeleton)
     } else if (inherits(skeleton, "SpatVector")) {
-      skeleton_sf <-
-        sf::st_as_sf(skeleton)
+      stopifnot(check_lines(skeleton))
+      skeleton_sf <- sf::st_as_sf(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
+      stopifnot(check_lines(skeleton))
       skeleton_sf <- skeleton
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
-      skeleton_sf <-
-        cnt_skeleton(input = input, ...)
+      skeleton_sf <- cnt_skeleton(input = input, ...)
     }
 
     # Find the longest path
@@ -133,19 +135,18 @@ cnt_path_guess.sfc <-
 
     # Find skeleton
     if (base::is.null(skeleton)) {
-      skeleton_sf <-
-        cnt_skeleton(input = input, ...)
+      skeleton_sf <- cnt_skeleton(input = input, ...)
     } else if (
       inherits(skeleton, "SpatVector") || inherits(skeleton, "geos_geometry")
     ) {
-      skeleton_sf <-
-        sf::st_as_sf(skeleton)
+      stopifnot(check_lines(skeleton))
+      skeleton_sf <- sf::st_as_sf(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
+      stopifnot(check_lines(skeleton))
       skeleton_sf <- skeleton
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
-      skeleton_sf <-
-        cnt_skeleton(input = input, ...)
+      skeleton_sf <- cnt_skeleton(input = input, ...)
     }
 
     # Find the longest path
