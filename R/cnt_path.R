@@ -87,6 +87,13 @@ cnt_path.geos_geometry <-
       end_point
     )
 
+    if (
+      any(get_geom_type(skeleton) == "multilinestring")
+    ) {
+      skeleton <-
+        geos::geos_unnest(skeleton, keep_multi = FALSE)
+    }
+
     # Transform to sf
     skeleton <-
       sf::st_as_sf(skeleton)
@@ -114,6 +121,13 @@ cnt_path.sf <-
       end_point
     )
 
+    if (
+      any(get_geom_type(skeleton) == "MULTILINESTRING")
+    ) {
+      skeleton <-
+        sf::st_cast(skeleton, "LINESTRING")
+    }
+
     # Find the paths
     cnt_path_master(skeleton, start_point, end_point) |>
       sf::st_as_sf() |>
@@ -129,6 +143,13 @@ cnt_path.sfc <-
     stopifnot(check_lines(skeleton))
     stopifnot(check_points(start_point))
     stopifnot(check_points(end_point))
+
+    if (
+      any(get_geom_type(skeleton) == "MULTILINESTRING")
+    ) {
+      skeleton <-
+        sf::st_cast(skeleton, "LINESTRING")
+    }
 
     # Find the paths
     cnt_path_master(skeleton, start_point, end_point) |>
@@ -160,6 +181,13 @@ cnt_path.SpatVector <-
       sf::st_as_sf(start_point)
     end_point <-
       sf::st_as_sf(end_point)
+
+    if (
+      any(get_geom_type(skeleton) == "MULTILINESTRING")
+    ) {
+      skeleton <-
+        sf::st_cast(skeleton, "LINESTRING")
+    }
 
     # Find the paths
     cnt_path_master(skeleton, start_point, end_point) |>

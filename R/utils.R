@@ -103,7 +103,12 @@ check_lines <- function(input) {
 
   # Check if geometry type is LINESTRING
   geom_type <- get_geom_type(input)
-  if (!all(geom_type %in% c("LINESTRING", "lines", "linestring"))) {
+  if (
+    !all(geom_type %in%
+      c(
+        "LINESTRING", "lines", "linestring",
+        "multilinestring", "MULTILINESTRING"
+      ))) {
     stop("Input skeleton does not contain 'LINESTRING' geometry.")
   }
 

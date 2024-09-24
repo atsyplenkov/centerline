@@ -1,5 +1,6 @@
 library(sf)
 library(terra)
+library(geos)
 
 # Test Input Validation
 test_that("cnt_path errors on incorrect input classes", {
