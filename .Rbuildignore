@@ -4,3 +4,4 @@
 ^\.github$
 ^README\.qmd$
 ^issues$
+^cran-comments\.md$
