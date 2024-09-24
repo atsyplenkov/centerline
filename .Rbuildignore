@@ -5,3 +5,4 @@
 ^README\.qmd$
 ^issues$
 ^cran-comments\.md$
+^README\.Rmd$

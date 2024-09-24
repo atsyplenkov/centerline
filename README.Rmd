@@ -1,20 +1,15 @@
 ---
-format: gfm
-execute: 
-  warning: false
-  message: false
-editor_options:
-  chunk_output_type: console
-knitr:
-  opts_chunk: 
-    dpi: 500
-    fig.path: 'man/figures/README-'
-    fig.align: 'center'
-    collapse: true
-    comment: '#>'
+output: github_document
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warn = FALSE,
+  message = FALSE
+)
+
 requireNamespace("geomtextpath", quietly = TRUE)
 requireNamespace("smoothr", quietly = TRUE)
 requireNamespace("ggplot2", quietly = TRUE)
@@ -35,14 +30,7 @@ The `centerline` R package simplifies the extraction of linear features from com
 
 ## Installation
 
-You can install the development version of `centerline` from [GitHub](https://github.com/) with `devtools`:
-
-```
-# install.packages("devtools")
-devtools::install_github("atsyplenkov/centerline")
-```
-
-or `pak` as follows:
+You can install the development version of `centerline` from [GitHub](https://github.com/) with `pak`:
 
 ```
 # install.packages("pak")
@@ -53,8 +41,7 @@ pak::pak("atsyplenkov/centerline")
 
 At the heart of this package is the `cnt_skeleton` function, which efficiently computes the skeleton of closed 2D polygonal geometries. The function uses [`geos::geos_simplify`](https://paleolimbot.github.io/geos/reference/geos_centroid.html) by default to keep the most important nodes and reduce noise from the beginning. However, it has option to densify the amount of points using [`geos::geos_densify`](https://paleolimbot.github.io/geos/reference/geos_centroid.html), which can produce more smooth results. Otherwise, you can set the parameter `keep = 1` to work with the initial geometry.
 
-```{r}
-#| label: example-lake
+```{r skeleton_lake, warn=FALSE, message=FALSE}
 library(sf)
 library(centerline)
 
@@ -79,12 +66,9 @@ lake_skeleton_d <-
 
 ```
 
-```{r}
-#| label: skeletons_plot
-#| code-fold: true
-#| code-summary: "Plot's code"
-#| width: 100%
-
+<details>
+<summary>cnt_skeleton() code 👇</summary>
+```{r skeletons_plot}
 library(ggplot2)
 
 skeletons <-
@@ -94,7 +78,8 @@ skeletons$type <- factor(
   levels = c("Original", "Simplified", "Densified")
 )
 
-ggplot() +
+skeletons_plot <-
+  ggplot() +
   geom_sf(
     data = lake,
     fill = "#c8e8f1",
@@ -102,25 +87,42 @@ ggplot() +
   ) +
   geom_sf(
     data = skeletons,
-    lwd = 0.2
+    lwd = 0.2,
+    alpha = 0.5,
+    color = "#263238"
   ) +
   coord_sf(expand = FALSE, clip = "off") +
   labs(caption = "cnt_skeleton() example") +
   facet_wrap(~type) +
   theme_void() +
   theme(
+    plot.caption = element_text(family = "mono", size = 6),
+    plot.background = element_rect(fill = "white", color = NA),
     strip.text = element_text(face = "bold", hjust = 0.25, size = 12),
-    plot.margin = margin(0, 0.5, 0, 0.5, unit = "lines"),
+    plot.margin = margin(0.2, -0.5, 0.2, -0.5, unit = "lines"),
     panel.spacing.x = unit(-2, "lines")
   )
-
+```
+</details>
+```{r save_skeletons, include=FALSE}
+ggsave(
+  "man/figures/README-skeletons_plot.png",
+  skeletons_plot,
+  dpi = 500,
+  width = 10,
+  height = 6,
+  units = "cm"
+)
+```
+```{r, echo=FALSE, out.width = "80%", fig.align = "center"}
+knitr::include_graphics("man/figures/README-skeletons_plot.png")
 ```
 
-However, the above-generated lines are not exactly a centerline of a polygon. One way to find the centerline of a closed polygon is to define both `start` and `end` points. For example, in the case of landslides, it could be the landslide initiation point and landslide terminus.
+<br>
+
+However, the above-generated lines are not exactly a centerline of a polygon. One way to find the centerline of a closed polygon is to define both `start` and `end` points with the `cnt_path()` function. For example, in the case of landslides, it could be the landslide initiation point and landslide terminus.
 
 ```{r}
-#| label: "Connect points example"
-
 # Load Polygon Of Interest (POI)
 polygon <-
   sf::st_read(
@@ -156,20 +158,12 @@ pol_path <-
     start_point = subset(points, points$type == "start"),
     end_point = subset(points, points$type == "end")
   )
-
 ```
 
-```{r}
-pol_path
-```
-
-```{r}
-#| label: path_plot
-#| code-fold: true
-#| code-summary: "Plot's code"
-#| eval: false
-
-ggplot() +
+<details>
+<summary>cnt_path() code 👇</summary>
+```{r path_plot}
+path_plot <- ggplot() +
   geom_sf(
     data = polygon,
     fill = "#d2d2d2",
@@ -209,29 +203,47 @@ ggplot() +
       "end" = 22
     )
   ) +
-  labs(
-    caption = "cnt_path() example"
-  ) +
-  theme_void()
-
+  coord_sf(expand = FALSE, clip = "off") +
+  labs(caption = "cnt_path() example") +
+  theme_void() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.85, 0.2),
+    legend.key.spacing.y = unit(-0.5, "lines"),
+    plot.caption = element_text(family = "mono", size = 6),
+    plot.background = element_rect(fill = "white", color = NA),
+    strip.text = element_text(face = "bold", hjust = 0.25, size = 12),
+    plot.margin = margin(0.2, -0.5, 0.2, -0.5, unit = "lines"),
+    panel.spacing.x = unit(-2, "lines")
+  )
 ```
+</details>
+
+```{r save_path_plot, include=FALSE}
+ggsave(
+  "man/figures/README-path_plot.png",
+  path_plot,
+  dpi = 500,
+  width = 7,
+  height = 6,
+  units = "cm"
+)
+```
+```{r, echo=FALSE, out.width = "50%", fig.align = "center"}
+knitr::include_graphics("man/figures/README-path_plot.png")
+```
+
+<br>
 
 And what if we don't know the starting and ending locations? What if we just want to place our label accurately in the middle of our polygon? In this case, one may find the `cnt_path_guess` function useful. It returns the line connecting the most distant points, i.e., the polygon's length. Such an approach is used in limnology for measuring [lake lengths](https://www.lakescientist.com/lake-shape/), for example.
 
 ```{r}
-#| label: "Lake labelling"
-#| warning: false
-#| message: false
-
 lake_centerline <- cnt_path_guess(lake, keep = 1)
-
 ```
 
-```{r}
-#| label: centerline_plot
-#| code-fold: true
-#| code-summary: "Plot's code"
-
+<details>
+<summary>cnt_path_guess() code 👇</summary>
+```{r centerline_plot}
 library(geomtextpath)
 library(smoothr)
 
@@ -249,7 +261,7 @@ cnt2 <-
 cnt2$lc <- c("black", NA_character_)
 cnt2$ll <- c("", lake$name)
 
-ggplot() +
+centerline_plot <- ggplot() +
   geom_sf(
     data = lake,
     fill = "#c8e8f1",
@@ -262,7 +274,7 @@ ggplot() +
       label = ll
     ),
     color = "#458894",
-    size = 8
+    size = 5
   ) +
   scale_color_identity() +
   facet_wrap(~lc) +
@@ -271,17 +283,38 @@ ggplot() +
   ) +
   theme_void() +
   theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.85, 0.2),
+    legend.key.spacing.y = unit(-0.5, "lines"),
+    plot.caption = element_text(family = "mono", size = 6),
+    plot.background = element_rect(fill = "white", color = NA),
     strip.text = element_blank(),
-    plot.margin = margin(0, 0, 0, 0),
-    panel.spacing.x = unit(-3, "lines")
+    plot.margin = margin(0.2, -0.5, 0.2, -0.5, unit = "lines"),
+    panel.spacing.x = unit(-2, "lines")
   )
+```
+</details>
+
+```{r save_centerline_plot, include=FALSE}
+ggsave(
+  "man/figures/README-centerline_plot.png",
+  centerline_plot,
+  dpi = 500,
+  width = 8,
+  height = 6,
+  units = "cm"
+)
+```
+```{r, echo=FALSE, out.width = "80%", fig.align = "center"}
+knitr::include_graphics("man/figures/README-centerline_plot.png")
 ```
 
 
 ## Roadmap
+
 ```
 centerline 📦
-├── Closed geometries (e.g., lakes)
+├── Closed geometries (e.g., lakes, landslides)
 │   ├── When we do know starting and ending points (e.g., landslides) ✅
 │   │   ├── centerline::cnt_skeleton ✅
 │   │   └── centerline::cnt_path ✅

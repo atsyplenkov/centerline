@@ -1,5 +1,4 @@
 
-
 # centerline
 
 <!-- badges: start -->
@@ -8,11 +7,11 @@
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 [![CRAN
-status](https://www.r-pkg.org/badges/version/centerline.png)](https://CRAN.R-project.org/package=centerline)
+status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
 ![GitHub R package
-version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline.png)
+version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline)
 ![GitHub last
-commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline.png)
+commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline)
 [![Codecov test
 coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
 <!-- badges: end -->
@@ -26,12 +25,7 @@ library in the background.
 ## Installation
 
 You can install the development version of `centerline` from
-[GitHub](https://github.com/) with `devtools`:
-
-    # install.packages("devtools")
-    devtools::install_github("atsyplenkov/centerline")
-
-or `pak` as follows:
+[GitHub](https://github.com/) with `pak`:
 
     # install.packages("pak")
     pak::pak("atsyplenkov/centerline")
@@ -72,8 +66,10 @@ lake_skeleton_d <-
   cnt_skeleton(lake, keep = 2)
 ```
 
-<details class="code-fold">
-<summary>Plot’s code</summary>
+<details>
+<summary>
+cnt_skeleton() code 👇
+</summary>
 
 ``` r
 library(ggplot2)
@@ -85,7 +81,8 @@ skeletons$type <- factor(
   levels = c("Original", "Simplified", "Densified")
 )
 
-ggplot() +
+skeletons_plot <-
+  ggplot() +
   geom_sf(
     data = lake,
     fill = "#c8e8f1",
@@ -93,28 +90,34 @@ ggplot() +
   ) +
   geom_sf(
     data = skeletons,
-    lwd = 0.2
+    lwd = 0.2,
+    alpha = 0.5,
+    color = "#263238"
   ) +
   coord_sf(expand = FALSE, clip = "off") +
   labs(caption = "cnt_skeleton() example") +
   facet_wrap(~type) +
   theme_void() +
   theme(
+    plot.caption = element_text(family = "mono", size = 6),
+    plot.background = element_rect(fill = "white", color = NA),
     strip.text = element_text(face = "bold", hjust = 0.25, size = 12),
-    plot.margin = margin(0, 0.5, 0, 0.5, unit = "lines"),
+    plot.margin = margin(0.2, -0.5, 0.2, -0.5, unit = "lines"),
     panel.spacing.x = unit(-2, "lines")
   )
 ```
 
 </details>
 
-<img src="man/figures/README-skeletons_plot-1.png"
-data-fig-align="center" />
+<img src="man/figures/README-skeletons_plot.png" width="80%" style="display: block; margin: auto;" />
+
+<br>
 
 However, the above-generated lines are not exactly a centerline of a
 polygon. One way to find the centerline of a closed polygon is to define
-both `start` and `end` points. For example, in the case of landslides,
-it could be the landslide initiation point and landslide terminus.
+both `start` and `end` points with the `cnt_path()` function. For
+example, in the case of landslides, it could be the landslide initiation
+point and landslide terminus.
 
 ``` r
 # Load Polygon Of Interest (POI)
@@ -154,22 +157,13 @@ pol_path <-
   )
 ```
 
-``` r
-pol_path
-#> Simple feature collection with 1 feature and 2 fields
-#> Geometry type: LINESTRING
-#> Dimension:     XY
-#> Bounding box:  xmin: 1830873 ymin: 5453783 xmax: 1830881 ymax: 5453789
-#> Projected CRS: NZGD2000 / New Zealand Transverse Mercator 2000
-#>    type id                       geometry
-#> 1 start  2 LINESTRING (1830873 5453788...
-```
-
-<details class="code-fold">
-<summary>Plot’s code</summary>
+<details>
+<summary>
+cnt_path() code 👇
+</summary>
 
 ``` r
-ggplot() +
+path_plot <- ggplot() +
   geom_sf(
     data = polygon,
     fill = "#d2d2d2",
@@ -209,13 +203,26 @@ ggplot() +
       "end" = 22
     )
   ) +
-  labs(
-    caption = "cnt_path() example"
-  ) +
-  theme_void()
+  coord_sf(expand = FALSE, clip = "off") +
+  labs(caption = "cnt_path() example") +
+  theme_void() +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.85, 0.2),
+    legend.key.spacing.y = unit(-0.5, "lines"),
+    plot.caption = element_text(family = "mono", size = 6),
+    plot.background = element_rect(fill = "white", color = NA),
+    strip.text = element_text(face = "bold", hjust = 0.25, size = 12),
+    plot.margin = margin(0.2, -0.5, 0.2, -0.5, unit = "lines"),
+    panel.spacing.x = unit(-2, "lines")
+  )
 ```
 
 </details>
+
+<img src="man/figures/README-path_plot.png" width="50%" style="display: block; margin: auto;" />
+
+<br>
 
 And what if we don’t know the starting and ending locations? What if we
 just want to place our label accurately in the middle of our polygon? In
@@ -228,8 +235,10 @@ lengths](https://www.lakescientist.com/lake-shape/), for example.
 lake_centerline <- cnt_path_guess(lake, keep = 1)
 ```
 
-<details class="code-fold">
-<summary>Plot’s code</summary>
+<details>
+<summary>
+cnt_path_guess() code 👇
+</summary>
 
 ``` r
 library(geomtextpath)
@@ -249,7 +258,7 @@ cnt2 <-
 cnt2$lc <- c("black", NA_character_)
 cnt2$ll <- c("", lake$name)
 
-ggplot() +
+centerline_plot <- ggplot() +
   geom_sf(
     data = lake,
     fill = "#c8e8f1",
@@ -262,7 +271,7 @@ ggplot() +
       label = ll
     ),
     color = "#458894",
-    size = 8
+    size = 5
   ) +
   scale_color_identity() +
   facet_wrap(~lc) +
@@ -271,21 +280,25 @@ ggplot() +
   ) +
   theme_void() +
   theme(
+    legend.position = "inside",
+    legend.position.inside = c(0.85, 0.2),
+    legend.key.spacing.y = unit(-0.5, "lines"),
+    plot.caption = element_text(family = "mono", size = 6),
+    plot.background = element_rect(fill = "white", color = NA),
     strip.text = element_blank(),
-    plot.margin = margin(0, 0, 0, 0),
-    panel.spacing.x = unit(-3, "lines")
+    plot.margin = margin(0.2, -0.5, 0.2, -0.5, unit = "lines"),
+    panel.spacing.x = unit(-2, "lines")
   )
 ```
 
 </details>
 
-<img src="man/figures/README-centerline_plot-1.png"
-data-fig-align="center" />
+<img src="man/figures/README-centerline_plot.png" width="80%" style="display: block; margin: auto;" />
 
 ## Roadmap
 
     centerline 📦
-    ├── Closed geometries (e.g., lakes)
+    ├── Closed geometries (e.g., lakes, landslides)
     │   ├── When we do know starting and ending points (e.g., landslides) ✅
     │   │   ├── centerline::cnt_skeleton ✅
     │   │   └── centerline::cnt_path ✅
