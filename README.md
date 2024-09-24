@@ -1,7 +1,5 @@
 
 
-<!-- README.md is generated from README.qmd. Please edit that file -->
-
 # centerline
 
 <!-- badges: start -->
@@ -28,17 +26,15 @@ library in the background.
 ## Installation
 
 You can install the development version of `centerline` from
-[GitHub](https://github.com/) with:
+[GitHub](https://github.com/) with `devtools`:
 
-``` r
-# install.packages("devtools")
-devtools::install_github("atsyplenkov/centerline")
+    # install.packages("devtools")
+    devtools::install_github("atsyplenkov/centerline")
 
-# OR
+or `pak` as follows:
 
-# install.packages("pak")
-pak::pak("atsyplenkov/centerline")
-```
+    # install.packages("pak")
+    pak::pak("atsyplenkov/centerline")
 
 ## Examples for closed geometries
 
@@ -53,71 +49,67 @@ which can produce more smooth results. Otherwise, you can set the
 parameter `keep = 1` to work with the initial geometry.
 
 ``` r
+library(sf)
 library(centerline)
-library(terra)
-#> terra 1.7.78
 
-# Load Polygon Of Interest (POI)
-polygon <-
-  terra::vect(
-    system.file(
-      "extdata/example.gpkg", package = "centerline"
-    ),
-    layer = "polygon"
+lake <-
+  sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "lake",
+    quiet = TRUE
   )
 
-# Find POI's skeleton
-pol_skeleton <-
-  cnt_skeleton(polygon, keep = 1)
+# Original
+lake_skeleton <-
+  cnt_skeleton(lake, keep = 1)
 
-# Simplified POI's skeleton
-pol_skeleton_simplify <-
-  cnt_skeleton(polygon, keep = .1)
+# Simplified
+lake_skeleton_s <-
+  cnt_skeleton(lake, keep = 0.1)
 
-# Densified POI's skeleton
-pol_skeleton_densify <-
-  cnt_skeleton(polygon, keep = 1.5)
+# Densified
+lake_skeleton_d <-
+  cnt_skeleton(lake, keep = 2)
 ```
 
 <details class="code-fold">
 <summary>Plot’s code</summary>
 
 ``` r
-# Plot
-par(
-  mar = c(0.5, 0.5, 0.2, 0.2),
-  mfrow = c(1, 3),
-  oma = c(0, 0, 0.2, 0.2)
+library(ggplot2)
+
+skeletons <-
+  rbind(lake_skeleton, lake_skeleton_s, lake_skeleton_d)
+skeletons$type <- factor(
+  c("Original", "Simplified", "Densified"),
+  levels = c("Original", "Simplified", "Densified")
 )
 
-# Raw
-plot(pol_skeleton,
-     col = "dodgerblue3")
-plot(polygon,
-     border = "grey20",
-     main = "Original",
-     add = T)
-
-# Simplified
-plot(pol_skeleton_simplify,
-     col = "dodgerblue3")
-plot(polygon,
-     border = "grey20",
-     main = "Simplified",
-     add = T)
-
-# Densified
-plot(pol_skeleton_densify,
-     col = "dodgerblue3")
-plot(polygon,
-     border = "grey20",
-     main = "Densified",
-     add = T)
+ggplot() +
+  geom_sf(
+    data = lake,
+    fill = "#c8e8f1",
+    color = NA
+  ) +
+  geom_sf(
+    data = skeletons,
+    lwd = 0.2
+  ) +
+  coord_sf(expand = FALSE, clip = "off") +
+  labs(caption = "cnt_skeleton() example") +
+  facet_wrap(~type) +
+  theme_void() +
+  theme(
+    strip.text = element_text(face = "bold", hjust = 0.25, size = 12),
+    plot.margin = margin(0, 0.5, 0, 0.5, unit = "lines"),
+    panel.spacing.x = unit(-2, "lines")
+  )
 ```
 
 </details>
 
-<img src="man/figures/README-plot-1-1.png" style="width:100.0%" />
+<img src="man/figures/README-skeletons_plot-1.png"
+data-fig-align="center" />
 
 However, the above-generated lines are not exactly a centerline of a
 polygon. One way to find the centerline of a closed polygon is to define
@@ -125,76 +117,105 @@ both `start` and `end` points. For example, in the case of landslides,
 it could be the landslide initiation point and landslide terminus.
 
 ``` r
+# Load Polygon Of Interest (POI)
+polygon <-
+  sf::st_read(
+    system.file(
+      "extdata/example.gpkg",
+      package = "centerline"
+    ),
+    layer = "polygon",
+    quiet = TRUE
+  )
+
 # Load points data
 points <-
-  terra::vect(
+  sf::st_read(
     system.file(
-      "extdata/example.gpkg", package = "centerline"
+      "extdata/example.gpkg",
+      package = "centerline"
     ),
-    layer = "polygon_points"
-  )
+    layer = "polygon_points",
+    quiet = TRUE
+  ) |>
+  head(n = 2)
+points$id <- seq_len(nrow(points))
+
+# Find POI's skeleton
+pol_skeleton <- cnt_skeleton(polygon, keep = 1.5)
 
 # Connect points
 # For original skeleton
 pol_path <-
   cnt_path(
     skeleton = pol_skeleton,
-    start_point = terra::subset(points, points$type == "start"),
-    end_point = terra::subset(points, points$type != "start")
+    start_point = subset(points, points$type == "start"),
+    end_point = subset(points, points$type == "end")
   )
+```
 
-# For simplified skeleton
-pol_path_simplify <-
-  cnt_path(
-    skeleton = pol_skeleton_simplify,
-    start_point = terra::subset(points, points$type == "start"),
-    end_point = terra::subset(points, points$type != "start")
-  )
-
-# For densified skeleton
-pol_path_dens <-
-  cnt_path(
-    skeleton = pol_skeleton_densify,
-    start_point = terra::subset(points, points$type == "start"),
-    end_point = terra::subset(points, points$type != "start")
-  )
+``` r
+pol_path
+#> Simple feature collection with 1 feature and 2 fields
+#> Geometry type: LINESTRING
+#> Dimension:     XY
+#> Bounding box:  xmin: 1830873 ymin: 5453783 xmax: 1830881 ymax: 5453789
+#> Projected CRS: NZGD2000 / New Zealand Transverse Mercator 2000
+#>    type id                       geometry
+#> 1 start  2 LINESTRING (1830873 5453788...
 ```
 
 <details class="code-fold">
 <summary>Plot’s code</summary>
 
 ``` r
-# Plot
-par(mfrow = c(1, 3))
-
-# Original
-plot(polygon, border = "grey20",
-     main = paste0("Original path (L = ",
-                   round(terra::perim(pol_path[1, ]), 2), " m)"))
-plot(pol_path[1, ], lwd = 3, add = T)
-plot(points[1, ], col = "coral2",  add = T)
-plot(points[2, ], col = "green4",  add = T)
-
-# Simplified
-plot(polygon, border = "grey20",
-     main = paste0("Simplified path (L = ",
-                   round(terra::perim(pol_path_simplify[1, ]), 2), " m)"))
-plot(pol_path_simplify[1, ], lwd = 3, add = T)
-plot(points[1, ], col = "coral2",  add = T)
-plot(points[2, ], col = "green4",  add = T)
-
-# Densified
-plot(polygon, border = "grey20",
-     main = paste0("Densified path (L = ",
-                   round(terra::perim(pol_path_dens[1, ]), 2), " m)"))
-plot(pol_path_dens[1, ], lwd = 3, add = T)
-plot(points[1, ], col = "coral2",  add = T)
-plot(points[2, ], col = "green4",  add = T)
+ggplot() +
+  geom_sf(
+    data = polygon,
+    fill = "#d2d2d2",
+    color = NA
+  ) +
+  geom_sf(
+    data = pol_skeleton,
+    lwd = 0.2,
+    alpha = 0.3
+  ) +
+  geom_sf(
+    data = pol_path,
+    lwd = 1,
+    color = "black"
+  ) +
+  geom_sf(
+    data = points,
+    aes(
+      shape = type,
+      fill = type
+    ),
+    color = "white",
+    lwd = rel(1),
+    size = rel(3)
+  ) +
+  scale_fill_manual(
+    name = "",
+    values = c(
+      "start" = "dodgerblue",
+      "end" = "firebrick"
+    )
+  ) +
+  scale_shape_manual(
+    name = "",
+    values = c(
+      "start" = 21,
+      "end" = 22
+    )
+  ) +
+  labs(
+    caption = "cnt_path() example"
+  ) +
+  theme_void()
 ```
 
 </details>
-
-<img src="man/figures/README-plot-2-1.png" style="width:100.0%" />
 
 And what if we don’t know the starting and ending locations? What if we
 just want to place our label accurately in the middle of our polygon? In
@@ -204,45 +225,25 @@ Such an approach is used in limnology for measuring [lake
 lengths](https://www.lakescientist.com/lake-shape/), for example.
 
 ``` r
-library(sf)
-
-lake <-
-  st_read(
-    system.file("extdata/example.gpkg", package = "centerline"),
-    layer = "lake",
-    quiet = T
-  ) |>
-  st_cast("POLYGON")
-
-lake_centerline <-
-  cnt_path_guess(lake, keep = 1)
+lake_centerline <- cnt_path_guess(lake, keep = 1)
 ```
 
 <details class="code-fold">
 <summary>Plot’s code</summary>
 
 ``` r
-library(ggplot2)
 library(geomtextpath)
 library(smoothr)
-#> 
-#> Attaching package: 'smoothr'
-#> The following object is masked from 'package:terra':
-#> 
-#>     densify
-#> The following object is masked from 'package:stats':
-#> 
-#>     smooth
 
 lake_centerline_s <-
   lake_centerline |>
-  st_simplify(dTolerance = 150)  |>
-  smooth("chaikin")
+  sf::st_simplify(dTolerance = 150) |>
+  smoothr::smooth("chaikin")
 
 cnt2 <-
   rbind(
-    st_as_sf(lake_centerline_s),
-    st_as_sf(lake_centerline_s)
+    lake_centerline_s,
+    lake_centerline_s
   )
 
 cnt2$lc <- c("black", NA_character_)
@@ -265,49 +266,21 @@ ggplot() +
   ) +
   scale_color_identity() +
   facet_wrap(~lc) +
+  labs(
+    caption = "cnt_path_guess() example"
+  ) +
   theme_void() +
-  theme(strip.text = element_blank())
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
-#> Warning in grid.Call.graphics(C_text, as.graphicsAnnot(x$label), x$x, x$y, :
-#> font family not found in Windows font database
+  theme(
+    strip.text = element_blank(),
+    plot.margin = margin(0, 0, 0, 0),
+    panel.spacing.x = unit(-3, "lines")
+  )
 ```
 
 </details>
 
-<img src="man/figures/README-plot-3-1.png" style="width:100.0%" />
+<img src="man/figures/README-centerline_plot-1.png"
+data-fig-align="center" />
 
 ## Roadmap
 
