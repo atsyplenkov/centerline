@@ -187,8 +187,8 @@ cnt_skeleton.SpatVector <-
         cbind(input_data[rep(1, nrow(pol_skeleton_crs)), ])
       return(pol_skeleton_crs)
     } else {
-      warning("input and skeleton have different number of rows, 
-      returning skeleton")
+      warning("input and skeleton have different number of rows,
+      returning skeleton without attributes")
       return(pol_skeleton_crs)
     }
   }

@@ -25,8 +25,11 @@ terra_to_sf <-
 terra_to_geos <-
   function(input) {
     input |>
-      terra::geom(wkt = TRUE) |>
-      geos::as_geos_geometry(crs = sf::st_crs(input))
+      sf::st_as_sf() |>
+      geos::as_geos_geometry()
+    # input |>
+    #   terra::geom(wkt = TRUE) |>
+    #   geos::as_geos_geometry(crs = sf::st_crs(input))
   }
 
 # GEOS to terra transformer
