@@ -56,6 +56,7 @@ check_same_class <- function(obj1, obj2, obj3) {
   }
 }
 
+# Get geometry type of the spatial object
 get_geom_type <-
   function(input) {
     if (inherits(input, "sf") || inherits(input, "sfc")) {
@@ -66,7 +67,6 @@ get_geom_type <-
       geos::geos_type(input)
     }
   }
-
 
 # Checks for polygon geometries
 check_polygons <- function(input) {
@@ -80,8 +80,11 @@ check_polygons <- function(input) {
 
   # Check if geometry type is POLYGON
   geom_type <- get_geom_type(input)
-  if (!all(geom_type %in% c("POLYGON", "polygons", "polygon"))) {
-    stop("Input does not contain 'POLYGON' or 'polygons' geometries.")
+  if (
+    !all(geom_type %in%
+      c("POLYGON", "polygons", "polygon", "multipolygon", "MULTIPOLYGON"))
+  ) {
+    stop("Input does not contain 'POLYGON' or 'MULTIPOLYGON' geometries.")
   }
 
   # If checks pass
@@ -129,7 +132,6 @@ check_points <- function(input) {
   return(TRUE)
 }
 
-
 # Polygon simplifications ------------------------------------------------
 # Fast simplification, similiar to {mapshaper} ms_simplify
 geos_ms_simplify <-
@@ -140,7 +142,6 @@ geos_ms_simplify <-
 
     point_count <-
       geom |>
-      geos::geos_unique_points() |>
       geos::geos_num_coordinates()
 
     point_density <-
@@ -161,7 +162,6 @@ geos_ms_densify <-
 
     point_count <-
       geom |>
-      geos::geos_unique_points() |>
       geos::geos_num_coordinates()
 
     point_density <-
@@ -171,25 +171,6 @@ geos_ms_densify <-
       geom,
       tolerance = point_density / (keep)
     )
-  }
-
-# Unique points ----------------------------------------------------------
-# Return unique points from a geos geometry
-unique_points <-
-  function(geos_obj) {
-    if (!inherits(geos_obj, "geos_geometry") &&
-      !inherits(geos_obj, "SpatVector")) {
-      geos_obj <- geos::as_geos_geometry(geos_obj)
-    } else if (inherits(geos_obj, "SpatVector")) {
-      geos_obj <- terra_to_geos(geos_obj)
-    }
-
-    geos_obj |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(geos_obj))
   }
 
 # Reverse lines if needed ------------------------------------------------
