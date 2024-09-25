@@ -1,4 +1,11 @@
-centerline 0.0.5 (2024-09-24)
+centerline 0.1 (2024-09-24)
+=========================
+
+### UPDATES
+
+  * CRAN first submission
+
+centerline 0.0.5 (2024-09-23)
 =========================
 
 ### UPDATES
