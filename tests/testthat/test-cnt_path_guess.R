@@ -1,5 +1,6 @@
 library(sf)
 library(terra)
+library(geos)
 
 polygon_sf <-
   sf::st_read(
@@ -143,7 +144,6 @@ test_that(
   }
 )
 
-# Test Output Structure
 test_that(
   "cnt_path_guess returns a LINESTRING geometry",
   {
@@ -173,7 +173,6 @@ test_that(
   }
 )
 
-# Test simplification/densification
 test_that(
   "Path guessing works with any 'keep' parameter",
   {
@@ -210,5 +209,118 @@ test_that(
     expect_true(all(test_lengths > 0))
     expect_vector(test_lengths, ptype = double(), size = 20)
     expect_gt(length(unique(test_lengths)), 1)
+  }
+)
+
+test_that(
+  "cnt_path_guess handles several POLYGON objects correctly and saves the
+  attribute table",
+  {
+    polygon_sf <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "shapes",
+        quiet = TRUE
+      )
+    polygon_sf$id <- seq_len(nrow(polygon_sf))
+
+    polygon_sfc <- sf::st_as_sfc(polygon_sf)
+    polygon_geos <- geos::as_geos_geometry(polygon_sf)
+    polygon_terra <- terra::vect(polygon_sf)
+
+    centerline_sf <- cnt_path_guess(polygon_sf)
+    centerline_sfc <- cnt_path_guess(polygon_sfc)
+    centerline_geos <- cnt_path_guess(polygon_geos)
+    centerline_terra <- cnt_path_guess(polygon_terra)
+
+    # Check length of geometries
+    expect_equal(
+      nrow(centerline_sf),
+      nrow(polygon_sf)
+    )
+    expect_equal(
+      length(centerline_sfc),
+      length(polygon_sfc)
+    )
+    expect_equal(
+      nrow(centerline_terra),
+      nrow(polygon_terra)
+    )
+    expect_equal(
+      length(centerline_geos),
+      length(polygon_geos)
+    )
+
+    # Compare attribute tables
+    expect_identical(
+      sf::st_drop_geometry(centerline_sf),
+      sf::st_drop_geometry(polygon_sf)
+    )
+    expect_identical(
+      terra::as.data.frame(centerline_terra),
+      terra::as.data.frame(polygon_terra)
+    )
+  }
+)
+
+
+test_that(
+  "cnt_path_guess handles several MULTIPOLYGON objects correctly and saves the
+  attribute table",
+  {
+    # One MULTIPOLYGON
+    multipolygon_sf <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "lake_island",
+        quiet = TRUE
+      )
+    multipolygon_sfc <- st_as_sfc(multipolygon_sf)
+    multipolygon_terra <- terra::vect(multipolygon_sf)
+    multipolygon_geos <- multipolygon_sf |>
+      geos::as_geos_geometry()
+
+    number_of_geometries <-
+      multipolygon_geos |>
+      geos::geos_num_geometries()
+
+    result_sfc <- cnt_path_guess(multipolygon_sfc)
+    result_sf <- cnt_path_guess(multipolygon_sf)
+    result_terra <- cnt_path_guess(multipolygon_terra)
+    result_geos <- cnt_path_guess(multipolygon_geos)
+
+    # Check class
+    expect_s3_class(result_sfc, c("sfc"))
+    expect_s3_class(result_sf, c("sf"))
+    expect_s4_class(result_terra, c("SpatVector"))
+    expect_s3_class(result_geos, c("geos_geometry"))
+
+    # Check length of geometries
+    expect_equal(
+      length(result_sfc),
+      number_of_geometries
+    )
+    expect_equal(
+      nrow(result_sf),
+      number_of_geometries
+    )
+    expect_equal(
+      nrow(result_terra),
+      number_of_geometries
+    )
+    expect_equal(
+      length(result_geos),
+      number_of_geometries
+    )
+
+    # Check attribute tables
+    expect_identical(
+      sf::st_drop_geometry(result_sf)[1, ],
+      sf::st_drop_geometry(multipolygon_sf)
+    )
+    expect_identical(
+      terra::as.data.frame(result_terra)[1, ],
+      terra::as.data.frame(multipolygon_terra)
+    )
   }
 )

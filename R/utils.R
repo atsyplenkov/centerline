@@ -25,8 +25,11 @@ terra_to_sf <-
 terra_to_geos <-
   function(input) {
     input |>
-      terra::geom(wkt = TRUE) |>
-      geos::as_geos_geometry(crs = sf::st_crs(input))
+      sf::st_as_sf() |>
+      geos::as_geos_geometry()
+    # input |>
+    #   terra::geom(wkt = TRUE) |>
+    #   geos::as_geos_geometry(crs = sf::st_crs(input))
   }
 
 # GEOS to terra transformer
@@ -56,6 +59,7 @@ check_same_class <- function(obj1, obj2, obj3) {
   }
 }
 
+# Get geometry type of the spatial object
 get_geom_type <-
   function(input) {
     if (inherits(input, "sf") || inherits(input, "sfc")) {
@@ -66,7 +70,6 @@ get_geom_type <-
       geos::geos_type(input)
     }
   }
-
 
 # Checks for polygon geometries
 check_polygons <- function(input) {
@@ -80,8 +83,11 @@ check_polygons <- function(input) {
 
   # Check if geometry type is POLYGON
   geom_type <- get_geom_type(input)
-  if (!all(geom_type %in% c("POLYGON", "polygons", "polygon"))) {
-    stop("Input does not contain 'POLYGON' or 'polygons' geometries.")
+  if (
+    !all(geom_type %in%
+      c("POLYGON", "polygons", "polygon", "multipolygon", "MULTIPOLYGON"))
+  ) {
+    stop("Input does not contain 'POLYGON' or 'MULTIPOLYGON' geometries.")
   }
 
   # If checks pass
@@ -100,7 +106,12 @@ check_lines <- function(input) {
 
   # Check if geometry type is LINESTRING
   geom_type <- get_geom_type(input)
-  if (!all(geom_type %in% c("LINESTRING", "lines", "linestring"))) {
+  if (
+    !all(geom_type %in%
+      c(
+        "LINESTRING", "lines", "linestring",
+        "multilinestring", "MULTILINESTRING"
+      ))) {
     stop("Input skeleton does not contain 'LINESTRING' geometry.")
   }
 
@@ -129,7 +140,6 @@ check_points <- function(input) {
   return(TRUE)
 }
 
-
 # Polygon simplifications ------------------------------------------------
 # Fast simplification, similiar to {mapshaper} ms_simplify
 geos_ms_simplify <-
@@ -140,7 +150,6 @@ geos_ms_simplify <-
 
     point_count <-
       geom |>
-      geos::geos_unique_points() |>
       geos::geos_num_coordinates()
 
     point_density <-
@@ -161,7 +170,6 @@ geos_ms_densify <-
 
     point_count <-
       geom |>
-      geos::geos_unique_points() |>
       geos::geos_num_coordinates()
 
     point_density <-
@@ -171,25 +179,6 @@ geos_ms_densify <-
       geom,
       tolerance = point_density / (keep)
     )
-  }
-
-# Unique points ----------------------------------------------------------
-# Return unique points from a geos geometry
-unique_points <-
-  function(geos_obj) {
-    if (!inherits(geos_obj, "geos_geometry") &&
-      !inherits(geos_obj, "SpatVector")) {
-      geos_obj <- geos::as_geos_geometry(geos_obj)
-    } else if (inherits(geos_obj, "SpatVector")) {
-      geos_obj <- terra_to_geos(geos_obj)
-    }
-
-    geos_obj |>
-      geos::geos_unique_points() |>
-      geos::geos_unnest(keep_multi = FALSE) |>
-      wk::as_wkt() |>
-      base::unique() |>
-      geos::as_geos_geometry(crs = wk::wk_crs(geos_obj))
   }
 
 # Reverse lines if needed ------------------------------------------------
@@ -257,47 +246,3 @@ find_closest_nodes <-
 
     geos::geos_nearest(nodes_geos, geos_graph)
   }
-
-
-# Straight skeleton
-# straight_skeleton <-
-#   function(input) {
-#     crs <- sf::st_crs(input)
-
-#     # Return skeleton
-#     sk <- raybevel::skeletonize(input)
-
-#     # Keep only inner links
-#     sk_links <-
-#       subset(sk$links, !sk$links$edge)
-
-#     # Create a data.frame of source nodes
-#     source_nodes <-
-#       sk$nodes[c("id", "x", "y")]
-#     names(source_nodes) <- c("source", "start_x", "start_y")
-
-#     # Create a data.frame of destination nodes
-#     destination_nodes <-
-#       sk$nodes[c("id", "x", "y")]
-#     names(destination_nodes) <- c("destination", "end_x", "end_y")
-
-#     # Build a linestring geometry
-#     sk_new <-
-#       merge(x = sk_links, y = source_nodes, by = "source", all.x = TRUE) |>
-#       merge(y = destination_nodes, by = "destination", all.x = TRUE)
-
-#     sk_new$geom <-
-#       sprintf(
-#         "LINESTRING(%s %s, %s %s)",
-#         sk_new$start_x,
-#         sk_new$start_y,
-#         sk_new$end_x,
-#         sk_new$end_y
-#       )
-
-#     # Transform to sf object
-#     sk_sf <-
-#       sf::st_as_sf(sk_new, wkt = "geom", crs = crs)
-
-#     return(sk_sf)
-#   }

@@ -56,32 +56,59 @@ cnt_skeleton <-
 cnt_skeleton.geos_geometry <-
   function(input,
            keep = 0.5) {
-    cnt_skeleton_geos(
-      input = input,
-      keep = keep
-    )
+    # Check if input is of supported class and geometry
+    stopifnot(check_polygons(input))
+
+    # Save CRS
+    crs <- wk::wk_crs(input)
+
+    # Transform to geos_geometry
+    input_geom_type <- geos::geos_type(input)
+
+    # Check if input is of geometry type 'MULTIPOLYGON'
+    if (any(input_geom_type == "multipolygon")) {
+      input <-
+        geos::geos_unnest(input, keep_multi = FALSE)
+    }
+
+    # Find GEOS skeleton
+    pol_skeleton <-
+      do.call(c, lapply(input, cnt_skeleton_geos, keep = keep))
+    wk::wk_crs(pol_skeleton) <- crs
+
+    pol_skeleton
   }
 
 #' @export
 cnt_skeleton.sf <-
   function(input,
            keep = 0.5) {
-    # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
+    # Check if input is of supported class and geometry
     stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- sf::st_crs(input)
 
-    # Transform to GEOS geometry
+    # Transform to geos_geometry
     input_geos <- geos::as_geos_geometry(input)
+    input_geom_type <- geos::geos_type(input)
+
+    # Check if input is of geometry type 'MULTIPOLYGON'
+    if (any(input_geom_type == "multipolygon")) {
+      input_geos <-
+        geos::geos_unnest(input_geos, keep_multi = FALSE)
+    }
 
     # Find GEOS skeleton
     pol_skeleton <-
-      cnt_skeleton_geos(input = input_geos, keep = keep)
+      do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
 
     # Transform back to sf
     pol_skeleton_crs <-
-      sf::st_as_sf(x = pol_skeleton, crs = crs)
+      pol_skeleton |>
+      sf::st_as_sf() |>
+      sf::st_set_crs(crs) |>
+      cbind(sf::st_drop_geometry(input))
 
     pol_skeleton_crs
   }
@@ -90,22 +117,31 @@ cnt_skeleton.sf <-
 cnt_skeleton.sfc <-
   function(input,
            keep = 0.5) {
-    # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
+    # Check if input is of supported class and geometry
     stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- sf::st_crs(input)
 
-    # Transform to GEOS geometry
+    # Transform to geos_geometry
     input_geos <- geos::as_geos_geometry(input)
+    input_geom_type <- geos::geos_type(input)
+
+    # Check if input is of geometry type 'MULTIPOLYGON'
+    if (any(input_geom_type == "multipolygon")) {
+      input_geos <-
+        geos::geos_unnest(input_geos, keep_multi = FALSE)
+    }
 
     # Find GEOS skeleton
     pol_skeleton <-
-      cnt_skeleton_geos(input = input_geos, keep = keep)
+      do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
 
     # Transform back to sf
     pol_skeleton_crs <-
-      sf::st_as_sfc(x = pol_skeleton, crs = crs)
+      pol_skeleton |>
+      sf::st_as_sfc() |>
+      sf::st_set_crs(crs)
 
     pol_skeleton_crs
   }
@@ -114,22 +150,47 @@ cnt_skeleton.sfc <-
 cnt_skeleton.SpatVector <-
   function(input,
            keep = 0.5) {
-    # Check if input is of class 'SpatVector' and 'polygons'
+    # Check if input is of supported class and geometry
     stopifnot(check_polygons(input))
 
+    # Input attributes
+    input_data <- terra::as.data.frame(input)
+
     # Transform to GEOS geometry
-    input_geos <-
-      terra_to_geos(input)
+    input_geos <- terra_to_geos(input)
+    input_geom_type <- geos::geos_type(input_geos)
+
+    # Check if input is of geometry type 'MULTIPOLYGON'
+    if (any(input_geom_type == "multipolygon")) {
+      input_geos <-
+        geos::geos_unnest(input_geos, keep_multi = FALSE)
+    }
 
     # Find GEOS skeleton
     pol_skeleton <-
-      cnt_skeleton_geos(input = input_geos, keep = keep)
+      do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
 
     # Transform back to SpatVect
     pol_skeleton_crs <-
       geos_to_terra(pol_skeleton)
 
-    pol_skeleton_crs
+    if (nrow(input_data) == 0) {
+      return(pol_skeleton_crs)
+    } else if (nrow(input_data) == nrow(pol_skeleton_crs)) {
+      pol_skeleton_crs <-
+        pol_skeleton_crs |>
+        cbind(input_data)
+      return(pol_skeleton_crs)
+    } else if (nrow(input_data) == 1 && nrow(pol_skeleton_crs) > 1) {
+      pol_skeleton_crs <-
+        pol_skeleton_crs |>
+        cbind(input_data[rep(1, nrow(pol_skeleton_crs)), ])
+      return(pol_skeleton_crs)
+    } else {
+      warning("input and skeleton have different number of rows,
+      returning skeleton without attributes")
+      return(pol_skeleton_crs)
+    }
   }
 
 cnt_skeleton_geos <-
@@ -158,7 +219,9 @@ cnt_skeleton_geos <-
       pol_geos |>
       geos::geos_voronoi_edges() |>
       geos::geos_intersection(pol_geos) |>
-      geos::geos_unnest(keep_multi = FALSE)
+      geos::geos_unnest(keep_multi = FALSE) |>
+      geos::geos_make_collection() |>
+      geos::geos_line_merge()
 
     pol_skeleton
   }

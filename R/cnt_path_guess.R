@@ -53,34 +53,32 @@ cnt_path_guess.geos_geometry <-
   function(input,
            skeleton = NULL,
            ...) {
-    # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
+    # Check if input is of geometry type 'POLYGON'
     stopifnot(check_polygons(input))
+    input_geom_type <- get_geom_type(input)
 
     # Save CRS
     crs <- wk::wk_crs(input)
 
-    # Transform to sf geometry
-    input_sf <- sf::st_as_sf(input)
-
     # Find skeleton
     if (base::is.null(skeleton)) {
-      skeleton_sf <- cnt_skeleton(input = input_sf, ...)
+      skeleton_geos <- cnt_skeleton(input = input, ...)
     } else if (inherits(skeleton, "geos_geometry")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- sf::st_as_sf(skeleton)
+      skeleton_geos <- skeleton
     } else if (inherits(skeleton, "SpatVector")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- sf::st_as_sf(skeleton)
+      skeleton_geos <- terra_to_geos(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- skeleton
+      skeleton_geos <- geos::as_geos_geometry(skeleton)
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
-      skeleton_sf <- cnt_skeleton(input = input_sf, ...)
+      skeleton_geos <- cnt_skeleton(input = input, ...)
     }
 
     longest_path_geos <-
-      cnt_path_guess_master(skeleton_sf)
+      do.call(c, lapply(skeleton_geos, cnt_path_guess_master))
 
     # Set CRS
     wk::wk_crs(longest_path_geos) <- crs
@@ -99,27 +97,36 @@ cnt_path_guess.sf <-
     # Save CRS
     crs <- sf::st_crs(input)
 
+    # Transform to geos_geometry
+    input_geos <- geos::as_geos_geometry(input)
+    input_geom_type <- geos::geos_type(input)
+
     # Find skeleton
     if (base::is.null(skeleton)) {
-      skeleton_sf <- cnt_skeleton(input = input, ...)
+      skeleton_geos <- cnt_skeleton(input = input_geos, ...)
     } else if (inherits(skeleton, "geos_geometry")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- sf::st_as_sf(skeleton)
+      skeleton_geos <- skeleton
     } else if (inherits(skeleton, "SpatVector")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- sf::st_as_sf(skeleton)
+      skeleton_geos <- terra_to_geos(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- skeleton
+      skeleton_geos <- geos::as_geos_geometry(skeleton)
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
-      skeleton_sf <- cnt_skeleton(input = input, ...)
+      skeleton_geos <- cnt_skeleton(input = input_geos, ...)
     }
 
     # Find the longest path
-    cnt_path_guess_master(skeleton_sf) |>
+    longest_path_geos <-
+      do.call(c, lapply(skeleton_geos, cnt_path_guess_master))
+
+    # Return the `sf` object
+    longest_path_geos |>
       sf::st_as_sf() |>
-      sf::st_set_crs(crs)
+      sf::st_set_crs(crs) |>
+      cbind(sf::st_drop_geometry(input))
   }
 
 #' @export
@@ -127,30 +134,39 @@ cnt_path_guess.sfc <-
   function(input,
            skeleton = NULL,
            ...) {
-    # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
+    # Check if input is of class 'POLYGON'
     stopifnot(check_polygons(input))
 
     # Save CRS
     crs <- sf::st_crs(input)
 
+    # Transform to geos_geometry
+    input_geos <- geos::as_geos_geometry(input)
+    input_geom_type <- geos::geos_type(input)
+
     # Find skeleton
     if (base::is.null(skeleton)) {
-      skeleton_sf <- cnt_skeleton(input = input, ...)
-    } else if (
-      inherits(skeleton, "SpatVector") || inherits(skeleton, "geos_geometry")
-    ) {
+      skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    } else if (inherits(skeleton, "geos_geometry")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- sf::st_as_sf(skeleton)
+      skeleton_geos <- skeleton
+    } else if (inherits(skeleton, "SpatVector")) {
+      stopifnot(check_lines(skeleton))
+      skeleton_geos <- terra_to_geos(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
       stopifnot(check_lines(skeleton))
-      skeleton_sf <- skeleton
+      skeleton_geos <- geos::as_geos_geometry(skeleton)
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
-      skeleton_sf <- cnt_skeleton(input = input, ...)
+      skeleton_geos <- cnt_skeleton(input = input_geos, ...)
     }
 
     # Find the longest path
-    cnt_path_guess_master(skeleton_sf) |>
+    longest_path_geos <-
+      do.call(c, lapply(skeleton_geos, cnt_path_guess_master))
+
+    # Return `sfc` object
+    longest_path_geos |>
       sf::st_as_sfc() |>
       sf::st_set_crs(crs)
   }
@@ -160,40 +176,71 @@ cnt_path_guess.SpatVector <-
   function(input,
            skeleton = NULL,
            ...) {
-    # Check if input is of class 'SpatVector' and 'polygons'
+    # Check if input is of class 'POLYGON'
     stopifnot(check_polygons(input))
+
+    # Input attributes
+    input_data <- terra::as.data.frame(input)
 
     # Save CRS
     crs <- terra::crs(input)
 
-    # Transform to sf geometry
-    input_sf <- sf::st_as_sf(input)
+    # Transform to geos_geometry
+    input_geos <- terra_to_geos(input)
+    input_geom_type <- geos::geos_type(input_geos)
 
     # Find skeleton
     if (base::is.null(skeleton)) {
-      skeleton_sf <-
-        cnt_skeleton(input = input_sf, ...)
-    } else if (
-      inherits(skeleton, "SpatVector") || inherits(skeleton, "geos_geometry")
-    ) {
-      skeleton_sf <-
-        sf::st_as_sf(skeleton)
+      skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    } else if (inherits(skeleton, "geos_geometry")) {
+      stopifnot(check_lines(skeleton))
+      skeleton_geos <- skeleton
+    } else if (inherits(skeleton, "SpatVector")) {
+      stopifnot(check_lines(skeleton))
+      skeleton_geos <- terra_to_geos(skeleton)
     } else if (inherits(skeleton, "sf") || inherits(skeleton, "sfc")) {
-      skeleton_sf <- skeleton
+      stopifnot(check_lines(skeleton))
+      skeleton_geos <- geos::as_geos_geometry(skeleton)
     } else {
       warning("skeleton is not of supported class, rebuilding it...")
-      skeleton_sf <-
-        cnt_skeleton(input = input_sf, ...)
+      skeleton_geos <- cnt_skeleton(input = input_geos, ...)
     }
+
     # Find the longest path
-    cnt_path_guess_master(skeleton_sf) |>
-      wk::as_wkt() |>
-      base::as.character() |>
-      terra::vect(crs = crs)
+    longest_path_geos <-
+      do.call(c, lapply(skeleton_geos, cnt_path_guess_master)) |>
+      geos_to_terra()
+
+    # Return `SpatVector` object with attribute table
+    if (nrow(input_data) == 0) {
+      return(longest_path_geos)
+    } else if (nrow(input_data) == nrow(longest_path_geos)) {
+      longest_path_geos <-
+        longest_path_geos |>
+        cbind(input_data)
+      return(longest_path_geos)
+    } else if (nrow(input_data) == 1 && nrow(longest_path_geos) > 1) {
+      longest_path_geos <-
+        longest_path_geos |>
+        cbind(input_data[rep(1, nrow(longest_path_geos)), ])
+      return(longest_path_geos)
+    } else {
+      warning("input and centerline have different number of rows,
+      returning centerline without attributes")
+      return(longest_path_geos)
+    }
   }
 
 cnt_path_guess_master <-
-  function(skeleton_sf) {
+  function(skeleton_geos) {
+    if (
+      geos::geos_type(skeleton_geos) == "multilinestring"
+    ) {
+      skeleton_geos <-
+        geos::geos_unnest(skeleton_geos, keep_multi = FALSE)
+    }
+
+    skeleton_sf <- sf::st_as_sf(skeleton_geos)
     # Convert skeleton to sfnetworks
     pol_network <-
       sfnetworks::as_sfnetwork(
@@ -213,7 +260,7 @@ cnt_path_guess_master <-
     closest_points <-
       find_closest_nodes(
         pol_network,
-        find_outer_nodes(geos::as_geos_geometry(skeleton_sf))
+        find_outer_nodes(skeleton_geos)
       )
 
     # Find the most distant point from center

@@ -1,6 +1,7 @@
-^centerline\.Rproj$
-^\.Rproj\.user$
 ^LICENSE\.md$
 ^\.github$
-^README\.qmd$
+^\.git$
 ^issues$
+^cran-comments\.md$
+^README\.Rmd$
+^README\.html$
