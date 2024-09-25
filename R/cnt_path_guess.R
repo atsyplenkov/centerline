@@ -21,26 +21,22 @@
 #' @export
 #'
 #' @examples
-#' library(terra)
-#'
+#' library(sf)
+#' library(geos)
 #' lake <-
-#'   terra::vect(
+#'   sf::st_read(
 #'     system.file("extdata/example.gpkg", package = "centerline"),
-#'     layer = "lake"
-#'   )
-#'
+#'     layer = "lake",
+#'     quiet = TRUE
+#'   ) |> 
+#'   geos::as_geos_geometry()
+#' # Find lake's centerline
+#' lake_centerline <- cnt_path_guess(input = lake, keep = 1)
+#' # Plot
 #' plot(lake)
-#'
-#' cnt_path_guess(
-#'   input = lake,
-#'   keep = 1
-#' ) |>
-#'   plot(
-#'     col = "firebrick",
-#'     lwd = 2,
-#'     add = TRUE
-#'   )
-#'
+#' plot(lake_centerline, col = "firebrick", lwd = 2, add = TRUE)
+#' 
+
 cnt_path_guess <-
   function(input,
            skeleton = NULL,

@@ -34,37 +34,43 @@
 #' @export
 #'
 #' @examples
-#'
-#' library(terra)
+#' library(sf)
+#' library(geos)
+
 #' # Load Polygon and points data
 #' polygon <-
-#'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
-#'     layer = "polygon"
-#'   )
+#'   sf::st_read(
+#'     system.file("extdata/example.gpkg", package = "centerline"),
+#'     layer = "polygon",
+#'     quiet = TRUE
+#'   ) |>
+#'   geos::as_geos_geometry()
 #'
 #' points <-
-#'   terra::vect(system.file("extdata/example.gpkg", package = "centerline"),
-#'     layer = "polygon_points"
-#'   )
+#'   sf::st_read(
+#'     system.file("extdata/example.gpkg", package = "centerline"),
+#'     layer = "polygon_points",
+#'     quiet = TRUE
+#'   ) |>
+#'   geos::as_geos_geometry()
 #'
 #' # Find polygon's skeleton
-#' pol_skeleton <-
-#'   cnt_skeleton(polygon)
+#' pol_skeleton <- cnt_skeleton(polygon)
 #'
 #' # Connect points
 #' pol_path <-
 #'   cnt_path(
 #'     skeleton = pol_skeleton,
-#'     start_point = subset(points, points$type == "start"),
-#'     end_point = subset(points, points$type != "start")
+#'     start_point = points[2],
+#'     end_point = points[1]
 #'   )
 #'
 #' # Plot
 #' plot(polygon)
 #' plot(pol_skeleton, col = "blue", add = TRUE)
-#' plot(points[1:2, ], col = "red", add = TRUE)
-#' plot(pol_path[1, ], lwd = 3, add = TRUE)
-#'
+#' plot(points[1:2], col = "red", add = TRUE)
+#' plot(pol_path, lwd = 3, add = TRUE)
+
 cnt_path <-
   function(skeleton,
            start_point,

@@ -27,7 +27,7 @@
 #'  resulting skeleton would potentially be more accurate.
 #'
 #' @return a \code{sf}, \code{sfc}, \code{SpatVector}
-#' or \code{geos_geometry} class object of a \code{LINESTRING} geometry
+#' or \code{geos_geometry} class object of a \code{MULTILINESTRING} geometry
 #'
 #' @export
 #'
