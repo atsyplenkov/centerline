@@ -18,7 +18,12 @@ a \code{sf}, \code{sfc}, \code{SpatVector}
 or \code{geos_geometry} class object of a \code{MULTILINESTRING} geometry
 }
 \description{
-Create a skeleton of a closed polygon object
+This function generates skeletons (centerlines) of closed polygon objects
+by applying Voronoi diagrams (Voronoi, 1908).
+A Voronoi diagram partitions space into regions based on the distance to
+the polygon's vertices. The edges of these
+cells form a network of lines (skeletons) that represent
+the structure of the polygon while preserving its overall shape.
 }
 \details{
 \itemize{
@@ -30,7 +35,7 @@ geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
 The current realisation of simplification is similar (\emph{but not identical})
 to \code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm. However,
-due to \code{geos} superpower, it performs \emph{ca.} 50x times faster.
+due to \code{geos} superpower, it performs several times faster.
 If you find that the built-in simplification algorithm performs poorly,
 try \code{rmapshaper::ms_simplify()} first and then find the polygon skeleton
 with \code{keep = 1}, i.e.
@@ -55,4 +60,9 @@ plot(polygon)
 pol_skeleton <- cnt_skeleton(polygon)
 
 plot(pol_skeleton)
+}
+\references{
+Voronoi, G. (1908). Nouvelles applications des paramètres
+continus à la théorie des formes quadratiques. Journal für die reine und
+angewandte Mathematik, 134, 198-287. \doi{10.1515/crll.1908.134.198}
 }

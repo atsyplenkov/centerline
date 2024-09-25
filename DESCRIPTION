@@ -10,9 +10,10 @@ Authors@R:
              comment = c(ORCID = "0000-0003-4144-8402"))
     )
 Maintainer: Anatoly Tsyplenkov <atsyplenkov@fastmail.com>
-Description: Provides method for extracting linear features from 2D polygons
-            by computing their centerlines (or median axes) using
-            Voronoi diagrams.
+Description: Generates skeletons of closed 2D polygons using Voronoi diagrams. 
+            It provides methods for 'sf', 'terra', and 'geos' objects to 
+            compute polygon centerlines based on the generated skeletons.
+            Voronoi, G. (1908) <doi:10.1515/crll.1908.134.198>.
 License: MIT + file LICENSE
 URL: https://github.com/atsyplenkov/centerline
 BugReports: https://github.com/atsyplenkov/centerline/issues
