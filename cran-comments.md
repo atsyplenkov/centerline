@@ -1,4 +1,5 @@
-This is a new release.
+This is a resubmission of a new release. 
+From my perspective, there are no references that I need to cite in the package. However, I found the original paper by Georgy Voronoi, who introduced the geometrical structure now known as Voronoi diagrams. As a tribute to his work, I’ve included the reference in the package and function descriptions.
 
 ## Test environments
 * local Windows 10 install, R 4.4.1 patched
