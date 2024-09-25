@@ -1,6 +1,6 @@
 Package: centerline
-Title: Extract Centerline from a Closed Polygons
-Version: 0.0.5
+Title: Extract Centerline from Closed Polygons
+Version: 0.1
 Authors@R:
     c(
       person(given = "Anatoly",
@@ -10,9 +10,9 @@ Authors@R:
              comment = c(ORCID = "0000-0003-4144-8402"))
     )
 Maintainer: Anatoly Tsyplenkov <atsyplenkov@fastmail.com>
-Description: The {centerline} package simplifies the extraction of linear 
-    features from closed 2D polygons, by computing their 
-    centerlines (or median-axis) using Voronoi diagrams.
+Description: Provides method for extracting linear features from 2D polygons
+            by computing their centerlines (or median axes) using
+            Voronoi diagrams.
 License: MIT + file LICENSE
 URL: https://github.com/atsyplenkov/centerline
 BugReports: https://github.com/atsyplenkov/centerline/issues
@@ -23,8 +23,6 @@ Suggests:
     terra (>= 1.7),
     igraph (>= 2.0.0),
     ggplot2 (>= 3.1.0),
-    knitr,
-    rmarkdown
 Imports:
     wk (>= 0.9),
     sf (>= 1.0),
@@ -35,4 +33,3 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Language: en-US
-VignetteBuilder: knitr
