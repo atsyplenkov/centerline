@@ -15,7 +15,7 @@ See Details.}
 }
 \value{
 a \code{sf}, \code{sfc}, \code{SpatVector}
-or \code{geos_geometry} class object of a \code{LINESTRING} geometry
+or \code{geos_geometry} class object of a \code{MULTILINESTRING} geometry
 }
 \description{
 Create a skeleton of a closed polygon object
