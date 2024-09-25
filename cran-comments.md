@@ -1,15 +1,13 @@
 This is a new release.
 
 ## Test environments
-
 * local Windows 10 install, R 4.4.1 patched
 * GitHub Actions macos-13
 * GitHub Actions windows-latest
-* Rhub Fedora Linux, R Under development (unstable) (2024-09-23 r87189)
 * Rhub Ubuntu Linux 22.04.5 LTS, R-release, R version 4.4.1 (2024-06-14)
 
 ## rhub CMD check results
-0 ERRORs | 0 WARNINGs | 0 NOTEs
+0 errors | 0 warnings | 0 notes
 
 ## win devel check results
 * checking CRAN incoming feasibility ... NOTE
@@ -18,8 +16,7 @@ Maintainer: 'Anatoly Tsyplenkov <atsyplenkov@fastmail.com>'
 New submission
 
 ## local R CMD check results
-
-0 ERRORs | 0 WARNINGs | 3 NOTEs
+0 errors | 0 warnings | 0 notes
 
 - All notes appear to be related to my local testing environment, since 
 I haven't seen them during remote testing
