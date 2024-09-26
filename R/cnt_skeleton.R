@@ -1,12 +1,12 @@
 #' Create a skeleton of a closed polygon object
-#' 
-#' This function generates skeletons (centerlines) of closed polygon objects 
-#' by applying Voronoi diagrams (Voronoi, 1908). 
-#' A Voronoi diagram partitions space into regions based on the distance to 
-#' the polygon's vertices. The edges of these 
-#' cells form a network of lines (skeletons) that represent 
+#'
+#' This function generates skeletons (centerlines) of closed polygon objects
+#' by applying Voronoi diagrams (Voronoi, 1908).
+#' A Voronoi diagram partitions space into regions based on the distance to
+#' the polygon's vertices. The edges of these
+#' cells form a network of lines (skeletons) that represent
 #' the structure of the polygon while preserving its overall shape.
-#' 
+#'
 #' @param input \code{sf}, \code{sfc}, \code{SpatVector}, or
 #' \code{geos_geometry} polygons object
 #' @param keep numeric, proportion of points to retain (0.05-Inf; default 0.5).
@@ -32,11 +32,11 @@
 #' algorithm is applied using the [geos::geos_densify()] function. This may
 #'  produce a very large object if keep is set more than 2. However, the
 #'  resulting skeleton would potentially be more accurate.
-#' 
-#' @references Voronoi, G. (1908). Nouvelles applications des paramètres 
-#' continus à la théorie des formes quadratiques. Journal für die reine und 
+#'
+#' @references Voronoi, G. (1908). Nouvelles applications des paramètres
+#' continus à la théorie des formes quadratiques. Journal für die reine und
 #' angewandte Mathematik, 134, 198-287. \doi{10.1515/crll.1908.134.198}
-#' 
+#'
 #' @return a \code{sf}, \code{sfc}, \code{SpatVector}
 #' or \code{geos_geometry} class object of a \code{MULTILINESTRING} geometry
 #'
@@ -234,4 +234,55 @@ cnt_skeleton_geos <-
       geos::geos_line_merge()
 
     pol_skeleton
+  }
+
+# TODO:
+# - add rlang::check_installed("raybevel")
+# - add rlang::arg_match() to choose between skeleton types
+cnt_skeleton_straight <-
+  function(input,
+           keep = 0.5) {
+    # Simplify or densify or do nothing
+    if (keep == 1) {
+      pol_geos <- input
+    } else if (keep < 1 && keep >= 0.05) {
+      # Simplify
+      pol_geos <-
+        geos_ms_simplify(input, keep = keep)
+    } else if (keep < 0.05) {
+      # Simplify at lower bound, otherwise result
+      # might be poor
+      pol_geos <-
+        geos_ms_simplify(input, keep = 0.05)
+    } else {
+      # Densify
+      pol_geos <-
+        geos_ms_densify(input, keep = keep)
+    }
+
+    # Estimate polygon holes
+    num_rings <-
+      geos::geos_num_interior_rings(pol_geos)
+    stopifnot(!is.null(num_rings))
+
+    if (num_rings == 0) {
+      sk <-
+        raybevel::skeletonize(
+          vertices = geos_to_matrix(pol_geos),
+          return_raw_ss = FALSE
+        )
+    } else {
+      geos_outer <-
+        pol_geos |>
+        get_geos_ring(1) |>
+        geos_to_matrix()
+      geos_inner <- list_geos_inner_rings(pol_geos, num_rings)
+      sk <-
+        raybevel::skeletonize(
+          vertices = geos_outer,
+          holes = geos_inner,
+          return_raw_ss = FALSE
+        )
+    }
+    raybevel_to_geos(sk, crs = wk::wk_crs(input))
   }

@@ -2,6 +2,10 @@ library(sf)
 library(geos)
 library(terra)
 
+# TODO:
+# Create {terra} checks in the individual tests
+# Check first that terra is installed lang::is_installed("terra")
+
 test_that(
   "cnt_skeleton returns same class as input with the same CRS and
   geometry type MULTILINESTRING",
@@ -214,6 +218,87 @@ test_that(
     expect_identical(
       terra::as.data.frame(result_terra),
       terra::as.data.frame(shapes_terra)
+    )
+  }
+)
+
+# TODO:
+# rewrite it to the cnt_skeleton(type = "straight")
+
+test_that(
+  "cnt_skeleton_straight works properly with geos_geometry objects",
+  {
+    shapes <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "shapes",
+        quiet = TRUE
+      ) |>
+      geos::as_geos_geometry()
+
+    shape_no_hole <- shapes[1]
+    shape_w_hole <- shapes[89]
+
+    result_no_hole <- cnt_skeleton_straight(shape_no_hole)
+    result_w_hole <- cnt_skeleton_straight(shape_w_hole)
+
+    # Check class
+    expect_s3_class(result_no_hole, c("geos_geometry"))
+    expect_s3_class(result_w_hole, c("geos_geometry"))
+
+    # Check crs
+    expect_identical(
+      sf::st_crs(result_no_hole),
+      sf::st_crs(shape_no_hole)
+    )
+    expect_identical(
+      sf::st_crs(result_w_hole),
+      sf::st_crs(shape_w_hole)
+    )
+
+    # Test that all skeletons are created without errors
+    # With keep parameter varying from 0 to 2
+    list_no_hole <-
+      lapply(seq(0.1, 2, by = 0.1), function(x) {
+        tryCatch(
+          cnt_skeleton_straight(shape_no_hole, keep = x),
+          error = \(e) NA
+        )
+      })
+    list_w_hole <-
+      lapply(seq(0.1, 2, by = 0.1), function(x) {
+        tryCatch(
+          cnt_skeleton_straight(shape_w_hole, keep = x),
+          error = \(e) NA
+        )
+      })
+
+    # Estimate lengths
+    lengths_w_hole <-
+      vapply(
+        list_w_hole,
+        geos::geos_length,
+        FUN.VALUE = numeric(1)
+      )
+    lengths_no_hole <-
+      vapply(
+        list_no_hole,
+        geos::geos_length,
+        FUN.VALUE = numeric(1)
+      )
+
+    # Check that all paths are not NA
+    expect_true(all(!is.na(list_no_hole)))
+    expect_true(all(!is.na(list_w_hole)))
+
+    # Check that first length is smaller than the median and last is larger
+    expect_true(lengths_no_hole[1] < median(lengths_no_hole))
+    expect_true(lengths_w_hole[1] < median(lengths_w_hole))
+    expect_true(
+      lengths_no_hole[length(lengths_no_hole)] > median(lengths_no_hole)
+    )
+    expect_true(
+      lengths_w_hole[length(lengths_w_hole)] > median(lengths_w_hole)
     )
   }
 )
