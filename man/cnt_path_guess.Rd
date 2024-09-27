@@ -18,6 +18,8 @@ using specified parameters (see inherit params below).}
   \describe{
     \item{\code{keep}}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
 See Details.}
+    \item{\code{method}}{character, either \code{"voronoi"} (default) or
+\code{"straight"}. See Details.}
   }}
 }
 \value{
