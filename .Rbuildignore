@@ -6,3 +6,6 @@
 ^README\.Rmd$
 ^README\.html$
 ^CRAN-SUBMISSION$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
