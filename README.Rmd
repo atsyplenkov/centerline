@@ -18,21 +18,22 @@ requireNamespace("ggplot2", quietly = TRUE)
 # centerline <img src="man/figures/logo.png" align="right" width="120" />
 
 <!-- badges: start -->
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml)
-[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
-[![CRAN status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
-![GitHub R package version](https://img.shields.io/github/r-package/v/atsyplenkov/centerline)
-![GitHub last commit](https://img.shields.io/github/last-commit/atsyplenkov/centerline)
 [![Codecov test coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
+[![CRAN status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
+[![Downloads](https://cranlogs.r-pkg.org/badges/centerline)](https://CRAN.R-project.org/package=centerline)
 <!-- badges: end -->
 
-The `centerline` R package simplifies the extraction of linear features from complex polygons, such as roads or rivers, by computing their centerlines (or median-axis) using Voronoi diagrams. It uses the super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) library in the background.
+The `centerline` R package simplifies the extraction of linear features from complex polygons, such as roads or rivers, by computing their centerlines (or median-axis) based on skeletons. It uses the super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) library in the background and have bindings for your favorite spatial data library ([`sf`](https://r-spatial.github.io/sf/), [`terra`](https://rspatial.github.io/terra/) and [`geos`](https://paleolimbot.github.io/geos/index.html)).
 
 ## Installation
 
-You can install the development version of `centerline` from [GitHub](https://github.com/) with `pak`:
+```{r, eval = FALSE}
+# The easiest way to get centerline is to install it from CRAN:
+install.packages("centerline")
 
-```
+# Or the development version from GitHub:
 # install.packages("pak")
 pak::pak("atsyplenkov/centerline")
 ```
@@ -168,11 +169,6 @@ path_plot <- ggplot() +
     data = polygon,
     fill = "#d2d2d2",
     color = NA
-  ) +
-  geom_sf(
-    data = pol_skeleton,
-    lwd = 0.2,
-    alpha = 0.3
   ) +
   geom_sf(
     data = pol_path,
@@ -329,6 +325,7 @@ centerline 📦
 - **R**
 	- [midlines](https://github.com/RichardPatterson/midlines) - A more hydrology-oriented library that provides a multi-step approach to generate a smooth centerline of complex curved polygons (like rivers).
 	- [cmgo](https://github.com/AntoniusGolly/cmgo) - The main aim of the package is to propose a workflow to extract channel bank metrics, and as a part of that workflow, centerline extraction was implemented.
+  - [raybevel](https://github.com/tylermorganwall/raybevel) - Provides a way to generate **straight** skeletons of polygons. This approach is implemented in the `cnt_skeleton(method = "straight")` function of the current package.
 - 🐍 Python:
 	- [centerline](https://github.com/fitodic/centerline/tree/master) library
 - 🦀 Rust:
