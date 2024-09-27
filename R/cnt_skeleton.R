@@ -1,19 +1,17 @@
 #' Create a skeleton of a closed polygon object
 #'
-#' This function generates skeletons (centerlines) of closed polygon objects
-#' by applying Voronoi diagrams (Voronoi, 1908).
-#' A Voronoi diagram partitions space into regions based on the distance to
-#' the polygon's vertices. The edges of these
-#' cells form a network of lines (skeletons) that represent
-#' the structure of the polygon while preserving its overall shape.
+#' This function generates skeletons of closed polygon objects.
 #'
 #' @param input \code{sf}, \code{sfc}, \code{SpatVector}, or
 #' \code{geos_geometry} polygons object
 #' @param keep numeric, proportion of points to retain (0.05-Inf; default 0.5).
 #' See Details.
+#' @param method character, either \code{"voronoi"} (default) or
+#' \code{"straight"}. See Details.
 #'
 #' @details
-#' - If \code{keep} equals 1, no transformation will occur. The
+#' ## Polygon simplification/densification
+#' - If \code{keep = 1}, no transformation will occur. The
 #' function will use the original geometry to find the skeleton.
 #'
 #' - If the \code{keep} parameter is below 1, then the [geos::geos_simplify()]
@@ -21,17 +19,30 @@
 #' geometry would be simplified, and the resulting skeleton will be cleaner but
 #' maybe more edgy.
 #' The current realisation of simplification is similar (*but not identical*)
-#' to `rmapshaper::ms_simplify()` one with Douglas-Peuker algorithm. However,
+#' to [rmapshaper::ms_simplify()] one with Douglas-Peuker algorithm. However,
 #' due to \code{geos} superpower, it performs several times faster.
 #' If you find that the built-in simplification algorithm performs poorly,
-#' try `rmapshaper::ms_simplify()` first and then find the polygon skeleton
-#' with `keep = 1`, i.e.
+#' try [rmapshaper::ms_simplify()] first and then find the polygon skeleton
+#' with \code{keep = 1}, i.e.
 #' \code{cnt_skeleton(rmapshaper::ms_simplify(polygon_sf), keep = 1)}
 #'
 #' - If the \code{keep} is above 1, then the densification
 #' algorithm is applied using the [geos::geos_densify()] function. This may
 #'  produce a very large object if keep is set more than 2. However, the
 #'  resulting skeleton would potentially be more accurate.
+#'
+#' ## Skeleton method
+#' - If \code{method = "voronoi"} (default), the skeleton will be generated
+#' using the [geos::geos_voronoi_edges()] function. This is application of the
+#' Voronoi diagram algorithm (Voronoi, 1908).
+#' A Voronoi diagram partitions space into regions based on the distance to
+#' the polygon's vertices. The edges of these
+#' cells form a network of lines (skeletons) that represent
+#' the structure of the polygon while preserving its overall shape.
+#'
+#' - If \code{method = "straight"}, the skeleton will be generated
+#' using the [raybevel::skeletonize()] function. See
+#' \url{https://www.tylermw.com/posts/rayverse/raybevel-introduction.html}
 #'
 #' @references Voronoi, G. (1908). Nouvelles applications des paramètres
 #' continus à la théorie des formes quadratiques. Journal für die reine und
@@ -57,17 +68,18 @@
 #'
 #' plot(pol_skeleton)
 cnt_skeleton <-
-  function(input,
-           keep = 0.5) {
+  function(input, keep = 0.5, method = "voronoi") {
     UseMethod("cnt_skeleton")
   }
 
 #' @export
 cnt_skeleton.geos_geometry <-
   function(input,
-           keep = 0.5) {
-    # Check if input is of supported class and geometry
+           keep = 0.5,
+           method = c("voronoi", "straight")) {
+    # Check input arguments
     stopifnot(check_polygons(input))
+    method <- rlang::arg_match(method)
 
     # Save CRS
     crs <- wk::wk_crs(input)
@@ -82,8 +94,14 @@ cnt_skeleton.geos_geometry <-
     }
 
     # Find GEOS skeleton
-    pol_skeleton <-
-      do.call(c, lapply(input, cnt_skeleton_geos, keep = keep))
+    if (method == "voronoi") {
+      pol_skeleton <-
+        do.call(c, lapply(input, cnt_skeleton_geos, keep = keep))
+    } else if (method == "straight") {
+      pol_skeleton <-
+        do.call(c, lapply(input, cnt_skeleton_straight, keep = keep))
+    }
+
     wk::wk_crs(pol_skeleton) <- crs
 
     pol_skeleton
@@ -92,9 +110,11 @@ cnt_skeleton.geos_geometry <-
 #' @export
 cnt_skeleton.sf <-
   function(input,
-           keep = 0.5) {
-    # Check if input is of supported class and geometry
+           keep = 0.5,
+           method = c("voronoi", "straight")) {
+    # Check input arguments
     stopifnot(check_polygons(input))
+    method <- rlang::arg_match(method)
 
     # Save CRS
     crs <- sf::st_crs(input)
@@ -110,8 +130,13 @@ cnt_skeleton.sf <-
     }
 
     # Find GEOS skeleton
-    pol_skeleton <-
-      do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
+    if (method == "voronoi") {
+      pol_skeleton <-
+        do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
+    } else if (method == "straight") {
+      pol_skeleton <-
+        do.call(c, lapply(input_geos, cnt_skeleton_straight, keep = keep))
+    }
 
     # Transform back to sf
     pol_skeleton_crs <-
@@ -126,9 +151,11 @@ cnt_skeleton.sf <-
 #' @export
 cnt_skeleton.sfc <-
   function(input,
-           keep = 0.5) {
-    # Check if input is of supported class and geometry
+           keep = 0.5,
+           method = c("voronoi", "straight")) {
+    # Check input arguments
     stopifnot(check_polygons(input))
+    method <- rlang::arg_match(method)
 
     # Save CRS
     crs <- sf::st_crs(input)
@@ -144,8 +171,13 @@ cnt_skeleton.sfc <-
     }
 
     # Find GEOS skeleton
-    pol_skeleton <-
-      do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
+    if (method == "voronoi") {
+      pol_skeleton <-
+        do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
+    } else if (method == "straight") {
+      pol_skeleton <-
+        do.call(c, lapply(input_geos, cnt_skeleton_straight, keep = keep))
+    }
 
     # Transform back to sf
     pol_skeleton_crs <-
@@ -159,9 +191,13 @@ cnt_skeleton.sfc <-
 #' @export
 cnt_skeleton.SpatVector <-
   function(input,
-           keep = 0.5) {
-    # Check if input is of supported class and geometry
+           keep = 0.5,
+           method = c("voronoi", "straight")) {
+    rlang::check_installed("terra")
+
+    # Check input arguments
     stopifnot(check_polygons(input))
+    method <- rlang::arg_match(method)
 
     # Input attributes
     input_data <- terra::as.data.frame(input)
@@ -177,8 +213,13 @@ cnt_skeleton.SpatVector <-
     }
 
     # Find GEOS skeleton
-    pol_skeleton <-
-      do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
+    if (method == "voronoi") {
+      pol_skeleton <-
+        do.call(c, lapply(input_geos, cnt_skeleton_geos, keep = keep))
+    } else if (method == "straight") {
+      pol_skeleton <-
+        do.call(c, lapply(input_geos, cnt_skeleton_straight, keep = keep))
+    }
 
     # Transform back to SpatVect
     pol_skeleton_crs <-
@@ -203,6 +244,8 @@ cnt_skeleton.SpatVector <-
     }
   }
 
+# TODO:
+# - Add keep parameter check (should be double and between 0 and 1)
 cnt_skeleton_geos <-
   function(input,
            keep = 0.5) {
@@ -236,12 +279,11 @@ cnt_skeleton_geos <-
     pol_skeleton
   }
 
-# TODO:
-# - add rlang::check_installed("raybevel")
-# - add rlang::arg_match() to choose between skeleton types
 cnt_skeleton_straight <-
   function(input,
            keep = 0.5) {
+    rlang::check_installed("raybevel")
+
     # Simplify or densify or do nothing
     if (keep == 1) {
       pol_geos <- input

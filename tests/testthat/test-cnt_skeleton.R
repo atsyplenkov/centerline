@@ -1,10 +1,66 @@
-library(sf)
-library(geos)
-library(terra)
+test_that("cnt_skeleton works with 'terra' objects", {
+  skip_if_not_installed("terra")
 
-# TODO:
-# Create {terra} checks in the individual tests
-# Check first that terra is installed lang::is_installed("terra")
+  polygon_sfc <-
+    sf::st_sfc(sf::st_polygon(list(matrix(
+      c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0),
+      ncol = 2, byrow = TRUE
+    ))))
+  polygon_terra <- terra::vect(polygon_sfc)
+  result_terra <- cnt_skeleton(polygon_terra, keep = 1)
+
+  # Check classes and CRS
+  expect_s4_class(result_terra, c("SpatVector"))
+  expect_contains(get_geom_type(result_terra), "lines")
+  expect_equal(terra::crs(result_terra), terra::crs(polygon_terra))
+})
+
+test_that(
+  "cnt_skeleton works with 'terra' MULTIPOLYGON geometries",
+  {
+    skip_if_not_installed("terra")
+    # One MULTIPOLYGON
+    multipolygon_terra <-
+      terra::vect(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "lake_island"
+      )
+
+    result_terra <- cnt_skeleton(multipolygon_terra, keep = 1)
+
+    expect_s4_class(result_terra, c("SpatVector"))
+    expect_equal(nrow(result_terra), 8)
+    expect_identical(
+      terra::as.data.frame(result_terra)[1, ],
+      terra::as.data.frame(multipolygon_terra)
+    )
+  }
+)
+
+test_that(
+  "cnt_skeleton works with 'terra' multiple POLYGON geometries",
+  {
+    skip_if_not_installed("terra")
+    # One MULTIPOLYGON
+    shapes_terra <-
+      terra::vect(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "shapes"
+      )
+    shapes_terra$id <- seq_len(nrow(shapes_terra))
+
+    result_terra <- cnt_skeleton(shapes_terra, keep = 1)
+
+    expect_equal(
+      nrow(result_terra),
+      nrow(shapes_terra)
+    )
+    expect_identical(
+      terra::as.data.frame(result_terra),
+      terra::as.data.frame(shapes_terra)
+    )
+  }
+)
 
 test_that(
   "cnt_skeleton returns same class as input with the same CRS and
@@ -17,30 +73,25 @@ test_that(
       ))))
 
     polygon_sf <- sf::st_as_sf(polygon_sfc)
-    polygon_terra <- terra::vect(polygon_sf)
     polygon_geos <- geos::as_geos_geometry(polygon_sf)
 
     result_sfc <- cnt_skeleton(polygon_sfc, keep = 1)
     result_sf <- cnt_skeleton(polygon_sf, keep = 1)
-    result_terra <- cnt_skeleton(polygon_terra, keep = 1)
     result_geos <- cnt_skeleton(polygon_geos, keep = 1)
 
     # Check class
     expect_s3_class(result_sfc, c("sfc"))
     expect_s3_class(result_sf, c("sf"))
-    expect_s4_class(result_terra, c("SpatVector"))
     expect_s3_class(result_geos, c("geos_geometry"))
 
     # Check geometry types
     expect_contains(get_geom_type(result_sf), "MULTILINESTRING")
     expect_contains(get_geom_type(result_sfc), "MULTILINESTRING")
-    expect_contains(get_geom_type(result_terra), "lines")
     expect_contains(get_geom_type(result_geos), "multilinestring")
 
     # Check CRS
     expect_equal(sf::st_crs(result_sf), sf::st_crs(polygon_sf))
     expect_equal(sf::st_crs(result_sfc), sf::st_crs(polygon_sfc))
-    expect_equal(terra::crs(result_terra), terra::crs(polygon_terra))
     expect_equal(wk::wk_crs(result_geos), wk::wk_crs(polygon_geos))
   }
 )
@@ -120,8 +171,7 @@ test_that(
         layer = "lake_island",
         quiet = TRUE
       )
-    multipolygon_sfc <- st_as_sfc(multipolygon_sf)
-    multipolygon_terra <- terra::vect(multipolygon_sf)
+    multipolygon_sfc <- sf::st_as_sfc(multipolygon_sf)
     multipolygon_geos <- multipolygon_sf |>
       geos::as_geos_geometry()
 
@@ -131,13 +181,11 @@ test_that(
 
     result_sfc <- cnt_skeleton(multipolygon_sfc, keep = 1)
     result_sf <- cnt_skeleton(multipolygon_sf, keep = 1)
-    result_terra <- cnt_skeleton(multipolygon_terra, keep = 1)
     result_geos <- cnt_skeleton(multipolygon_geos, keep = 1)
 
     # Check class
     expect_s3_class(result_sfc, c("sfc"))
     expect_s3_class(result_sf, c("sf"))
-    expect_s4_class(result_terra, c("SpatVector"))
     expect_s3_class(result_geos, c("geos_geometry"))
 
     # Check length of geometries
@@ -150,10 +198,6 @@ test_that(
       number_of_geometries
     )
     expect_equal(
-      nrow(result_terra),
-      number_of_geometries
-    )
-    expect_equal(
       length(result_geos),
       number_of_geometries
     )
@@ -162,10 +206,6 @@ test_that(
     expect_identical(
       sf::st_drop_geometry(result_sf)[1, ],
       sf::st_drop_geometry(multipolygon_sf)
-    )
-    expect_identical(
-      terra::as.data.frame(result_terra)[1, ],
-      terra::as.data.frame(multipolygon_terra)
     )
   }
 )
@@ -183,13 +223,10 @@ test_that(
     shapes$id <- seq_len(nrow(shapes))
 
     shapes_sfc <- sf::st_as_sfc(shapes)
-    shapes_terra <- terra::vect(shapes)
-    shapes_geos <- shapes |>
-      geos::as_geos_geometry()
+    shapes_geos <- geos::as_geos_geometry(shapes)
 
     result_sf <- cnt_skeleton(shapes, keep = 1)
     result_sfc <- cnt_skeleton(shapes_sfc, keep = 1)
-    result_terra <- cnt_skeleton(shapes_terra, keep = 1)
     result_geos <- cnt_skeleton(shapes_geos, keep = 1)
 
     # Check length of geometries
@@ -202,10 +239,6 @@ test_that(
       length(shapes_sfc)
     )
     expect_equal(
-      nrow(result_terra),
-      nrow(shapes_terra)
-    )
-    expect_equal(
       length(result_geos),
       length(shapes_geos)
     )
@@ -215,19 +248,14 @@ test_that(
       sf::st_drop_geometry(result_sf),
       sf::st_drop_geometry(shapes)
     )
-    expect_identical(
-      terra::as.data.frame(result_terra),
-      terra::as.data.frame(shapes_terra)
-    )
   }
 )
 
-# TODO:
-# rewrite it to the cnt_skeleton(type = "straight")
-
 test_that(
-  "cnt_skeleton_straight works properly with geos_geometry objects",
+  "cnt_skeleton generates straight skeletons",
   {
+    skip_if_not_installed("raybevel")
+
     shapes <-
       sf::st_read(
         system.file("extdata/example.gpkg", package = "centerline"),
@@ -239,8 +267,8 @@ test_that(
     shape_no_hole <- shapes[1]
     shape_w_hole <- shapes[89]
 
-    result_no_hole <- cnt_skeleton_straight(shape_no_hole)
-    result_w_hole <- cnt_skeleton_straight(shape_w_hole)
+    result_no_hole <- cnt_skeleton(shape_no_hole, method = "straight")
+    result_w_hole <- cnt_skeleton(shape_w_hole, method = "straight")
 
     # Check class
     expect_s3_class(result_no_hole, c("geos_geometry"))

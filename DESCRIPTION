@@ -1,6 +1,6 @@
 Package: centerline
 Title: Extract Centerline from Closed Polygons
-Version: 0.1
+Version: 0.1.1
 Authors@R:
     c(
       person(given = "Anatoly",

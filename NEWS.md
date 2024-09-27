@@ -1,3 +1,12 @@
+centerline 0.1.1 (2024-09-27)
+=========================
+
+### UPDATES
+
+  * Added a new argument to the `cnt_skeleton()` function — `method`.
+    It should be either `"voronoi"` or `"straight"`. Depending on it, the
+    generating skeleton method will change.
+
 centerline 0.1 (2024-09-24)
 =========================
 
