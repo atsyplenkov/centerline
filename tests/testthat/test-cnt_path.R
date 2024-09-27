@@ -148,8 +148,14 @@ test_that(
     expect_true(inherits(result_one, c("sf")))
     expect_equal(sf::st_crs(result), sf::st_crs(polygon))
     expect_equal(sf::st_crs(result_one), sf::st_crs(polygon))
-    expect_equal(sf::st_drop_geometry(result), sf::st_drop_geometry(start_point))
-    expect_equal(sf::st_drop_geometry(result_one), sf::st_drop_geometry(start_point[1, ]))
+    expect_equal(
+      sf::st_drop_geometry(result),
+      sf::st_drop_geometry(start_point)
+    )
+    expect_equal(
+      sf::st_drop_geometry(result_one),
+      sf::st_drop_geometry(start_point[1, ])
+    )
 
     # Invalid inputs
     expect_error(
