@@ -4,7 +4,7 @@
 \alias{cnt_skeleton}
 \title{Create a skeleton of a closed polygon object}
 \usage{
-cnt_skeleton(input, keep = 0.5)
+cnt_skeleton(input, keep = 0.5, method = "voronoi")
 }
 \arguments{
 \item{input}{\code{sf}, \code{sfc}, \code{SpatVector}, or
@@ -12,38 +12,53 @@ cnt_skeleton(input, keep = 0.5)
 
 \item{keep}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
 See Details.}
+
+\item{method}{character, either \code{"voronoi"} (default) or
+\code{"straight"}. See Details.}
 }
 \value{
 a \code{sf}, \code{sfc}, \code{SpatVector}
 or \code{geos_geometry} class object of a \code{MULTILINESTRING} geometry
 }
 \description{
-This function generates skeletons (centerlines) of closed polygon objects
-by applying Voronoi diagrams (Voronoi, 1908).
-A Voronoi diagram partitions space into regions based on the distance to
-the polygon's vertices. The edges of these
-cells form a network of lines (skeletons) that represent
-the structure of the polygon while preserving its overall shape.
+This function generates skeletons of closed polygon objects.
 }
 \details{
+\subsection{Polygon simplification/densification}{
 \itemize{
-\item If \code{keep} equals 1, no transformation will occur. The
+\item If \code{keep = 1}, no transformation will occur. The
 function will use the original geometry to find the skeleton.
 \item If the \code{keep} parameter is below 1, then the \code{\link[geos:geos_centroid]{geos::geos_simplify()}}
 function will be used. So the original input
 geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
 The current realisation of simplification is similar (\emph{but not identical})
-to \code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm. However,
+to \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} one with Douglas-Peuker algorithm. However,
 due to \code{geos} superpower, it performs several times faster.
 If you find that the built-in simplification algorithm performs poorly,
-try \code{rmapshaper::ms_simplify()} first and then find the polygon skeleton
+try \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} first and then find the polygon skeleton
 with \code{keep = 1}, i.e.
 \code{cnt_skeleton(rmapshaper::ms_simplify(polygon_sf), keep = 1)}
 \item If the \code{keep} is above 1, then the densification
 algorithm is applied using the \code{\link[geos:geos_centroid]{geos::geos_densify()}} function. This may
 produce a very large object if keep is set more than 2. However, the
 resulting skeleton would potentially be more accurate.
+}
+}
+
+\subsection{Skeleton method}{
+\itemize{
+\item If \code{method = "voronoi"} (default), the skeleton will be generated
+using the \code{\link[geos:geos_delaunay_triangles]{geos::geos_voronoi_edges()}} function. This is application of the
+Voronoi diagram algorithm (Voronoi, 1908).
+A Voronoi diagram partitions space into regions based on the distance to
+the polygon's vertices. The edges of these
+cells form a network of lines (skeletons) that represent
+the structure of the polygon while preserving its overall shape.
+\item If \code{method = "straight"}, the skeleton will be generated
+using the \code{\link[raybevel:skeletonize]{raybevel::skeletonize()}} function. See
+\url{https://www.tylermw.com/posts/rayverse/raybevel-introduction.html}
+}
 }
 }
 \examples{

@@ -1,166 +1,104 @@
-library(sf)
-library(terra)
-library(geos)
-
-# Test Input Validation
-test_that("cnt_path errors on incorrect input classes", {
-  expect_error(
-    cnt_path(
-      skeleton = "not a skeleton",
-      start_point = "not a start_point",
-      end_point = "not an end_point"
-    )
-  )
-})
-
-test_that("cnt_path errors on multiple end points", {
-  polygon <-
-    sf::st_read(
-      system.file("extdata/example.gpkg", package = "centerline"),
-      layer = "polygon",
-      quiet = TRUE
-    )
-
-  start_point <-
-    sf::st_read(
-      system.file("extdata/example.gpkg", package = "centerline"),
-      query = "SELECT * FROM polygon_points WHERE type IS 'start'",
-      quiet = TRUE
-    )
-
-  end_point <-
-    sf::st_read(
-      system.file("extdata/example.gpkg", package = "centerline"),
-      query = "SELECT * FROM polygon_points WHERE type IS 'end'",
-      quiet = TRUE
-    )
-
-  # Find polygon's skeleton
-  skeleton <- cnt_skeleton(polygon)
-
-  expect_error(
-    cnt_path(skeleton, end_point, start_point)
-  )
-})
-
 test_that(
-  "cnt_path handles sf, sfc, geos_geometry and
-SpatVector inputs equivalently",
+  "cnt_path handles 'terra' geometries",
   {
+    skip_if_not_installed("terra")
+
     polygon <-
-      sf::st_read(
+      terra::vect(
         system.file("extdata/example.gpkg", package = "centerline"),
-        layer = "polygon",
-        quiet = TRUE
+        layer = "polygon"
       )
-
     start_point <-
-      sf::st_read(
+      terra::vect(
         system.file("extdata/example.gpkg", package = "centerline"),
-        query = "SELECT * FROM polygon_points WHERE type IS 'start'",
-        quiet = TRUE
+        query = "SELECT * FROM polygon_points WHERE type IS 'start'"
       )
-
     end_point <-
-      sf::st_read(
+      terra::vect(
         system.file("extdata/example.gpkg", package = "centerline"),
-        query = "SELECT * FROM polygon_points WHERE type IS 'end'",
-        quiet = TRUE
+        query = "SELECT * FROM polygon_points WHERE type IS 'end'"
       )
 
     # Find polygon's skeleton
-    skeleton <-
-      cnt_skeleton(polygon)
+    skeleton <- cnt_skeleton(polygon, keep = 1)
 
-    result_sf <-
-      cnt_path(skeleton, start_point, end_point)
-    result_sfc <-
+    # Two starting points
+    result <-
       cnt_path(
-        sf::st_as_sfc(skeleton),
-        sf::st_as_sfc(start_point),
-        sf::st_as_sfc(end_point)
+        skeleton,
+        start_point,
+        end_point
       )
-    result_spat <-
+
+    # One starting point
+    result_one <-
       cnt_path(
-        terra::vect(skeleton),
-        terra::vect(start_point),
-        terra::vect(end_point)
+        skeleton,
+        start_point[1, ],
+        end_point
       )
-    result_geos <-
+
+    # Test Output Structure
+    expect_length(result, 2)
+    expect_length(result_one, 1)
+    expect_contains(get_geom_type(result), "lines")
+    expect_contains(get_geom_type(result_one), "lines")
+    # Class, CRS and attributes are inherited
+    expect_true(inherits(result, c("SpatVector")))
+    expect_true(inherits(result_one, c("SpatVector")))
+    expect_equal(terra::crs(result), terra::crs(polygon))
+    expect_equal(terra::crs(result_one), terra::crs(polygon))
+    expect_equal(as.data.frame(result), as.data.frame(start_point))
+    expect_equal(as.data.frame(result_one), as.data.frame(start_point[1, ]))
+
+    # Invalid inputs
+    expect_error(
       cnt_path(
-        geos::as_geos_geometry(skeleton),
-        geos::as_geos_geometry(start_point),
-        geos::as_geos_geometry(end_point)
+        skeleton = skeleton,
+        start_point = skeleton,
+        end_point = start_point
       )
-
-    # Compare results
-    expect_length(result_spat, 2)
-    expect_length(result_geos, 2)
-    expect_length(result_sf, 2)
-    expect_length(result_sfc, 2)
-
-    # Compare output classes
-    expect_true(inherits(result_sf, c("sf")))
-    expect_true(inherits(result_sfc, c("sfc")))
-    expect_true(inherits(result_spat, c("SpatVector")))
-    expect_true(inherits(result_geos, c("geos_geometry")))
-
-    # Check geometry types
-    expect_contains(get_geom_type(result_sf), "LINESTRING")
-    expect_contains(get_geom_type(result_sfc), "LINESTRING")
-    expect_contains(get_geom_type(result_spat), "lines")
-    expect_contains(get_geom_type(result_geos), "linestring")
-  }
-)
-
-# Test Output Structure
-test_that(
-  "cnt_path returns a correct class objects with LINESTRING geometry
-  when there are two or more starting points",
-  {
-    polygon <-
-      sf::st_read(
-        system.file("extdata/example.gpkg", package = "centerline"),
-        layer = "polygon",
-        quiet = TRUE
+    )
+    expect_error(
+      cnt_path(
+        skeleton = polygon,
+        start_point = end_point,
+        end_point = start_point
       )
-
-    start_point <-
-      sf::st_read(
-        system.file("extdata/example.gpkg", package = "centerline"),
-        query = "SELECT * FROM polygon_points WHERE type IS 'start'",
-        quiet = TRUE
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = end_point,
+        end_point = start_point
       )
-
-    end_point <-
-      sf::st_read(
-        system.file("extdata/example.gpkg", package = "centerline"),
-        query = "SELECT * FROM polygon_points WHERE type IS 'end'",
-        quiet = TRUE
+    )
+    expect_error(
+      cnt_path(
+        skeleton = "not a skeleton",
+        start_point = start_point,
+        end_point = end_point
       )
-
-    # Find polygon's skeleton
-    skeleton <-
-      cnt_skeleton(polygon)
-
-    result <- cnt_path(skeleton, start_point, end_point)
-    expect_true(is.data.frame(result))
-    expect_true(inherits(result, c("sf", "sfc", "SpatVector")))
-    # Check for LINESTRING geometry;
-    expect_true(all(
-      sf::st_geometry_type(result) == "LINESTRING"
-    ))
-
-    # Simple geometry
-    expect_true(all(
-      sf::st_is_simple(result)
-    ))
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = "end_point"
+      )
+    )
   }
 )
 
 test_that(
-  "cnt_path returns a correct class objects with LINESTRING geometry
-  when there is only one starting point",
+  "cnt_path handles 'sf' geometries",
   {
     polygon <-
       sf::st_read(
@@ -168,14 +106,12 @@ test_that(
         layer = "polygon",
         quiet = TRUE
       )
-
     start_point <-
       sf::st_read(
         system.file("extdata/example.gpkg", package = "centerline"),
         query = "SELECT * FROM polygon_points WHERE type IS 'start'",
         quiet = TRUE
-      )[1, ]
-
+      )
     end_point <-
       sf::st_read(
         system.file("extdata/example.gpkg", package = "centerline"),
@@ -184,20 +120,296 @@ test_that(
       )
 
     # Find polygon's skeleton
-    skeleton <-
-      cnt_skeleton(polygon)
+    skeleton <- cnt_skeleton(polygon, keep = 1)
 
-    result <- cnt_path(skeleton, start_point, end_point)
-    expect_true(is.data.frame(result))
-    expect_true(inherits(result, c("sf", "sfc", "SpatVector")))
-    # Check for LINESTRING geometry
-    expect_true(all(
-      sf::st_geometry_type(result) == "LINESTRING"
-    ))
+    # Two starting points
+    result <-
+      cnt_path(
+        skeleton,
+        start_point,
+        end_point
+      )
 
-    # Simple geometry
-    expect_true(all(
-      sf::st_is_simple(result)
-    ))
+    # One starting point
+    result_one <-
+      cnt_path(
+        skeleton,
+        start_point[1, ],
+        end_point
+      )
+
+    # Test Output Structure
+    expect_equal(nrow(result), 2)
+    expect_equal(nrow(result_one), 1)
+    expect_contains(get_geom_type(result), "LINESTRING")
+    expect_contains(get_geom_type(result_one), "LINESTRING")
+    # Class, CRS and attributes are inherited
+    expect_true(inherits(result, c("sf")))
+    expect_true(inherits(result_one, c("sf")))
+    expect_equal(sf::st_crs(result), sf::st_crs(polygon))
+    expect_equal(sf::st_crs(result_one), sf::st_crs(polygon))
+    expect_equal(sf::st_drop_geometry(result), sf::st_drop_geometry(start_point))
+    expect_equal(sf::st_drop_geometry(result_one), sf::st_drop_geometry(start_point[1, ]))
+
+    # Invalid inputs
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = skeleton,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = polygon,
+        start_point = end_point,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = end_point,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = "not a skeleton",
+        start_point = start_point,
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = "end_point"
+      )
+    )
+  }
+)
+
+
+test_that(
+  "cnt_path handles 'sfc' geometries",
+  {
+    polygon <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "polygon",
+        quiet = TRUE
+      ) |>
+      sf::st_as_sfc()
+    start_point <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        query = "SELECT * FROM polygon_points WHERE type IS 'start'",
+        quiet = TRUE
+      ) |>
+      sf::st_as_sfc()
+    end_point <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        query = "SELECT * FROM polygon_points WHERE type IS 'end'",
+        quiet = TRUE
+      ) |>
+      sf::st_as_sfc()
+
+    # Find polygon's skeleton
+    skeleton <- cnt_skeleton(polygon, keep = 1)
+
+    # Two starting points
+    result <-
+      cnt_path(
+        skeleton,
+        start_point,
+        end_point
+      )
+
+    # One starting point
+    result_one <-
+      cnt_path(
+        skeleton,
+        start_point[1],
+        end_point
+      )
+
+    # Test Output Structure
+    expect_equal(length(result), 2)
+    expect_equal(length(result_one), 1)
+    expect_contains(get_geom_type(result), "LINESTRING")
+    expect_contains(get_geom_type(result_one), "LINESTRING")
+    # Class, CRS and attributes are inherited
+    expect_true(inherits(result, c("sfc")))
+    expect_true(inherits(result_one, c("sfc")))
+    expect_equal(sf::st_crs(result), sf::st_crs(polygon))
+    expect_equal(sf::st_crs(result_one), sf::st_crs(polygon))
+
+    # Invalid inputs
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = skeleton,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = polygon,
+        start_point = end_point,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = end_point,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = "not a skeleton",
+        start_point = start_point,
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = "end_point"
+      )
+    )
+  }
+)
+
+
+test_that(
+  "cnt_path handles 'geos' geometries",
+  {
+    polygon <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        layer = "polygon",
+        quiet = TRUE
+      ) |>
+      geos::as_geos_geometry()
+    start_point <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        query = "SELECT * FROM polygon_points WHERE type IS 'start'",
+        quiet = TRUE
+      ) |>
+      geos::as_geos_geometry()
+    end_point <-
+      sf::st_read(
+        system.file("extdata/example.gpkg", package = "centerline"),
+        query = "SELECT * FROM polygon_points WHERE type IS 'end'",
+        quiet = TRUE
+      ) |>
+      geos::as_geos_geometry()
+
+    # Find polygon's skeleton
+    skeleton <- cnt_skeleton(polygon, keep = 1)
+
+    # Two starting points
+    result <-
+      cnt_path(
+        skeleton,
+        start_point,
+        end_point
+      )
+
+    # One starting point
+    result_one <-
+      cnt_path(
+        skeleton,
+        start_point[1],
+        end_point
+      )
+
+    # Test Output Structure
+    expect_equal(length(result), 2)
+    expect_equal(length(result_one), 1)
+    expect_contains(get_geom_type(result), "linestring")
+    expect_contains(get_geom_type(result_one), "linestring")
+    # Class, CRS and attributes are inherited
+    expect_true(inherits(result, c("geos_geometry")))
+    expect_true(inherits(result_one, c("geos_geometry")))
+    expect_identical(wk::wk_crs(result), wk::wk_crs(polygon))
+    expect_identical(wk::wk_crs(result_one), wk::wk_crs(polygon))
+
+    # Invalid inputs
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = skeleton,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = polygon,
+        start_point = end_point,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = end_point,
+        end_point = start_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = "not a skeleton",
+        start_point = start_point,
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = end_point
+      )
+    )
+    expect_error(
+      cnt_path(
+        skeleton = skeleton,
+        start_point = "start_point",
+        end_point = "end_point"
+      )
+    )
+  }
+)
+
+test_that(
+  "cnt_path errors on incorrect input classes",
+  {
+    expect_error(
+      cnt_path(
+        skeleton = "not a skeleton",
+        start_point = "not a start_point",
+        end_point = "not an end_point"
+      )
+    )
   }
 )

@@ -246,3 +246,63 @@ find_closest_nodes <-
 
     geos::geos_nearest(nodes_geos, geos_graph)
   }
+
+# Straight skeleton helpers ----------------------------------------------
+# geos_geometry polygon to matrix of coordinates
+geos_to_matrix <-
+  function(geos_obj) {
+    coords <- wk::wk_coords(geos_obj)
+    matrix(c(coords$x, coords$y), ncol = 2)
+  }
+
+# Extract ring from polygon
+# If the i == 1, it returns the polygon itself
+get_geos_ring <-
+  function(geos_obj, i) {
+    geos_obj |>
+      geos::geos_ring_n(i) |>
+      geos::geos_polygonize() |>
+      geos::geos_unnest()
+  }
+
+# Get list of inner rings coordinates in a form of a list of matrices
+list_geos_inner_rings <-
+  function(geos_obj, num_rings) {
+    num_iter <- seq(from = 2, to = num_rings + 1)
+
+    lapply(num_iter, function(i) {
+      get_geos_ring(geos_obj, i)
+    }) |>
+      lapply(geos_to_matrix)
+  }
+
+# Convert raybevel object to geos_geometry object
+raybevel_to_geos <-
+  function(rayskeleton, crs = NULL) {
+    # Keep only inner links
+    sk_links <- rayskeleton$links[!rayskeleton$links$edge, ]
+    # Create a data.frame of source nodes
+    source_nodes <- rayskeleton$nodes[c("id", "x", "y")]
+    names(source_nodes) <- c("source", "start_x", "start_y")
+    # Create a data.frame of destination nodes
+    destination_nodes <- rayskeleton$nodes[c("id", "x", "y")]
+    names(destination_nodes) <- c("destination", "end_x", "end_y")
+
+    # Build a linestring geometry
+    sk_new <-
+      merge(x = sk_links, y = source_nodes, by = "source", all.x = TRUE) |>
+      merge(y = destination_nodes, by = "destination", all.x = TRUE)
+
+    sk_geometry <-
+      sprintf(
+        "LINESTRING(%s %s, %s %s)",
+        sk_new$start_x,
+        sk_new$start_y,
+        sk_new$end_x,
+        sk_new$end_y
+      )
+
+    geos::as_geos_geometry(sk_geometry, crs = crs) |>
+      geos::geos_make_collection() |>
+      geos::geos_line_merge()
+  }
