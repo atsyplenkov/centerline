@@ -231,7 +231,10 @@ cnt_path_master <-
       sf::st_nearest_feature(end_point_sf, pol_network)
 
     # Check if there are several end nodes
-    stopifnot(length(end_nodes) == 1)
+    stopifnot(
+      "Only one end point is allowed" =
+        length(end_nodes) == 1
+    )
 
     # Find the shortest path between two points
     paths <-
