@@ -1,3 +1,10 @@
+centerline 0.1.2 (2024-09-28)
+=========================
+
+### UPDATES
+
+  * Website launched with some vignettes.
+
 centerline 0.1.1 (2024-09-27)
 =========================
 
