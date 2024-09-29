@@ -22,6 +22,8 @@ multipolygon_sf <-
 test_that(
   "cnt_path_guess inherits params",
   {
+    skip_if_not_installed("raybevel")
+
     polygon <- polygon_sf
     skeleton <- skeleton_sf
 
