@@ -1,3 +1,11 @@
+centerline 0.1.3 (2024-09-29)
+=========================
+
+### UPDATES
+
+  * Switched from `rlang` to `checkmate` for type checks
+  * Web-only vignettes to reduce package size
+
 centerline 0.1.2 (2024-09-28)
 =========================
 
