@@ -19,6 +19,42 @@ multipolygon_sf <-
     quiet = TRUE
   )
 
+test_that(
+  "cnt_path_guess inherits params",
+  {
+    polygon <- polygon_sf
+    skeleton <- skeleton_sf
+
+    result <- cnt_path_guess(polygon)
+    result_keep1 <- cnt_path_guess(polygon, keep = 1)
+    result_straight <- cnt_path_guess(polygon, method = "straight")
+
+    # All objects should be 'sf'
+    expect_s3_class(result, "sf")
+    expect_s3_class(result_keep1, "sf")
+    expect_s3_class(result_straight, "sf")
+
+    # All geometries should be 'LINESTRING'
+    expect_contains(get_geom_type(result), "LINESTRING")
+    expect_contains(get_geom_type(result_keep1), "LINESTRING")
+    expect_contains(get_geom_type(result_straight), "LINESTRING")
+
+    # Outputs are different
+    expect_false(
+      identical(
+        sf::st_length(result),
+        sf::st_length(result_straight)
+      )
+    )
+
+    # Expect errors and warnings
+    expect_error(cnt_path_guess(polygon, keep = 10))
+    expect_error(cnt_path_guess(polygon, keep = -1))
+    expect_error(cnt_path_guess(polygon, method = "asdf"))
+    expect_error(cnt_path_guess(polygon, keep = 1, method = "asdf"))
+    expect_warning(cnt_path_guess(polygon, method = "straight", keep = 1.1))
+  }
+)
 
 test_that(
   "cnt_path_guess works with 'sf' geometries",

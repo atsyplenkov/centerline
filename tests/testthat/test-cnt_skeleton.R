@@ -93,6 +93,12 @@ test_that(
     expect_equal(sf::st_crs(result_sf), sf::st_crs(polygon_sf))
     expect_equal(sf::st_crs(result_sfc), sf::st_crs(polygon_sfc))
     expect_equal(wk::wk_crs(result_geos), wk::wk_crs(polygon_geos))
+
+    # Check type errors
+    expect_error(cnt_skeleton(polygon_geos, keep = "a"))
+    expect_error(cnt_skeleton(polygon_geos, keep = -10))
+    expect_error(cnt_skeleton(polygon_geos, keep = 10))
+    expect_error(cnt_skeleton(polygon_geos, method = "a"))
   }
 )
 
@@ -285,18 +291,18 @@ test_that(
     )
 
     # Test that all skeletons are created without errors
-    # With keep parameter varying from 0 to 2
+    # With keep parameter varying from 0 to 1
     list_no_hole <-
-      lapply(seq(0.1, 2, by = 0.1), function(x) {
+      lapply(seq(0.1, 1, by = 0.1), function(x) {
         tryCatch(
-          cnt_skeleton_straight(shape_no_hole, keep = x),
+          cnt_skeleton(shape_no_hole, keep = x, method = "straight"),
           error = \(e) NA
         )
       })
     list_w_hole <-
-      lapply(seq(0.1, 2, by = 0.1), function(x) {
+      lapply(seq(0.1, 1, by = 0.1), function(x) {
         tryCatch(
-          cnt_skeleton_straight(shape_w_hole, keep = x),
+          cnt_skeleton(shape_w_hole, keep = x, method = "straight"),
           error = \(e) NA
         )
       })
@@ -322,11 +328,13 @@ test_that(
     # Check that first length is smaller than the median and last is larger
     expect_true(lengths_no_hole[1] < median(lengths_no_hole))
     expect_true(lengths_w_hole[1] < median(lengths_w_hole))
-    expect_true(
-      lengths_no_hole[length(lengths_no_hole)] > median(lengths_no_hole)
+
+    # Expect warning, when keep > 1
+    expect_warning(
+      cnt_skeleton(shape_w_hole, keep = 1.1, method = "straight")
     )
-    expect_true(
-      lengths_w_hole[length(lengths_w_hole)] > median(lengths_w_hole)
+    expect_warning(
+      cnt_skeleton(shape_no_hole, keep = 1.1, method = "straight")
     )
   }
 )
