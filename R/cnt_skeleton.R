@@ -7,7 +7,8 @@
 #' @param keep numeric, proportion of points to retain (0.05-Inf; default 0.5).
 #' See Details.
 #' @param method character, either \code{"voronoi"} (default) or
-#' \code{"straight"}. See Details.
+#' \code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
+#' See Details.
 #'
 #' @details
 #' ## Polygon simplification/densification
@@ -79,7 +80,8 @@ cnt_skeleton.geos_geometry <-
            method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
-    method <- rlang::arg_match(method)
+    checkmate::assert_number(keep, lower = 0, upper = 5)
+    method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Save CRS
     crs <- wk::wk_crs(input)
@@ -114,7 +116,8 @@ cnt_skeleton.sf <-
            method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
-    method <- rlang::arg_match(method)
+    checkmate::assert_number(keep, lower = 0, upper = 5)
+    method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Save CRS
     crs <- sf::st_crs(input)
@@ -155,7 +158,8 @@ cnt_skeleton.sfc <-
            method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
-    method <- rlang::arg_match(method)
+    checkmate::assert_number(keep, lower = 0, upper = 5)
+    method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Save CRS
     crs <- sf::st_crs(input)
@@ -193,11 +197,12 @@ cnt_skeleton.SpatVector <-
   function(input,
            keep = 0.5,
            method = c("voronoi", "straight")) {
-    rlang::check_installed("terra")
+    check_package("terra")
 
     # Check input arguments
     stopifnot(check_polygons(input))
-    method <- rlang::arg_match(method)
+    checkmate::assert_number(keep, lower = 0, upper = 5)
+    method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Input attributes
     input_data <- terra::as.data.frame(input)
@@ -244,8 +249,6 @@ cnt_skeleton.SpatVector <-
     }
   }
 
-# TODO:
-# - Add keep parameter check (should be double and between 0 and 1)
 cnt_skeleton_geos <-
   function(input,
            keep = 0.5) {
@@ -282,7 +285,14 @@ cnt_skeleton_geos <-
 cnt_skeleton_straight <-
   function(input,
            keep = 0.5) {
-    rlang::check_installed("raybevel")
+    check_package("raybevel")
+
+    if (keep > 1) {
+      warning(
+        "Generating a straight skeleton with
+        keep > 1 is not recommended and may take a very long time."
+      )
+    }
 
     # Simplify or densify or do nothing
     if (keep == 1) {
