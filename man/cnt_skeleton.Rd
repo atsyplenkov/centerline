@@ -14,7 +14,8 @@ cnt_skeleton(input, keep = 0.5, method = "voronoi")
 See Details.}
 
 \item{method}{character, either \code{"voronoi"} (default) or
-\code{"straight"}. See Details.}
+\code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
+See Details.}
 }
 \value{
 a \code{sf}, \code{sfc}, \code{SpatVector}

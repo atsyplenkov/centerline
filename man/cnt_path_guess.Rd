@@ -19,7 +19,8 @@ using specified parameters (see inherit params below).}
     \item{\code{keep}}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
 See Details.}
     \item{\code{method}}{character, either \code{"voronoi"} (default) or
-\code{"straight"}. See Details.}
+\code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
+See Details.}
   }}
 }
 \value{
