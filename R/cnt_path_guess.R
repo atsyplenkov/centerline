@@ -13,6 +13,8 @@
 #' @param skeleton \code{NULL} (default) or [centerline::cnt_skeleton()] output.
 #' If \code{NULL} then polygon's skeleton would be estimated in the background
 #' using specified parameters (see inherit params below).
+#' @param return_geos \code{FALSE} (default). A logical flag that controls
+#' whether the \code{geos_geometry} should be returned.
 #'
 #' @inheritDotParams cnt_skeleton
 #'
@@ -28,18 +30,18 @@
 #'     system.file("extdata/example.gpkg", package = "centerline"),
 #'     layer = "lake",
 #'     quiet = TRUE
-#'   ) |> 
+#'   ) |>
 #'   geos::as_geos_geometry()
 #' # Find lake's centerline
 #' lake_centerline <- cnt_path_guess(input = lake, keep = 1)
 #' # Plot
 #' plot(lake)
 #' plot(lake_centerline, col = "firebrick", lwd = 2, add = TRUE)
-#' 
-
+#'
 cnt_path_guess <-
   function(input,
            skeleton = NULL,
+           return_geos = FALSE,
            ...) {
     UseMethod("cnt_path_guess")
   }
@@ -86,6 +88,7 @@ cnt_path_guess.geos_geometry <-
 cnt_path_guess.sf <-
   function(input,
            skeleton = NULL,
+           return_geos = FALSE,
            ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
     stopifnot(check_polygons(input))
@@ -118,17 +121,23 @@ cnt_path_guess.sf <-
     longest_path_geos <-
       do.call(c, lapply(skeleton_geos, cnt_path_guess_master))
 
-    # Return the `sf` object
-    longest_path_geos |>
-      sf::st_as_sf() |>
-      sf::st_set_crs(crs) |>
-      cbind(sf::st_drop_geometry(input))
+    if (return_geos) {
+      # Return the `geos_geometry` object
+      return(longest_path_geos)
+    } else {
+      # Return the `sf` object
+      longest_path_geos |>
+        sf::st_as_sf() |>
+        sf::st_set_crs(crs) |>
+        cbind(sf::st_drop_geometry(input))
+    }
   }
 
 #' @export
 cnt_path_guess.sfc <-
   function(input,
            skeleton = NULL,
+           return_geos = FALSE,
            ...) {
     # Check if input is of class 'POLYGON'
     stopifnot(check_polygons(input))
@@ -161,16 +170,22 @@ cnt_path_guess.sfc <-
     longest_path_geos <-
       do.call(c, lapply(skeleton_geos, cnt_path_guess_master))
 
-    # Return `sfc` object
-    longest_path_geos |>
-      sf::st_as_sfc() |>
-      sf::st_set_crs(crs)
+    if (return_geos) {
+      # Return the `geos_geometry` object
+      return(longest_path_geos)
+    } else {
+      # Return the `sfc` object
+      longest_path_geos |>
+        sf::st_as_sfc() |>
+        sf::st_set_crs(crs)
+    }
   }
 
 #' @export
 cnt_path_guess.SpatVector <-
   function(input,
            skeleton = NULL,
+           return_geos = FALSE,
            ...) {
     # Check if input is of class 'POLYGON'
     stopifnot(check_polygons(input))
@@ -204,34 +219,38 @@ cnt_path_guess.SpatVector <-
 
     # Find the longest path
     longest_path_geos <-
-      do.call(c, lapply(skeleton_geos, cnt_path_guess_master)) |>
-      geos_to_terra()
+      do.call(c, lapply(skeleton_geos, cnt_path_guess_master))
 
-    # Return `SpatVector` object with attribute table
-    if (nrow(input_data) == 0) {
-      return(longest_path_geos)
-    } else if (nrow(input_data) == nrow(longest_path_geos)) {
-      longest_path_geos <-
-        longest_path_geos |>
-        cbind(input_data)
-      return(longest_path_geos)
-    } else if (nrow(input_data) == 1 && nrow(longest_path_geos) > 1) {
-      longest_path_geos <-
-        longest_path_geos |>
-        cbind(input_data[rep(1, nrow(longest_path_geos)), ])
+    if (return_geos) {
+      # Return the `geos_geometry` object
       return(longest_path_geos)
     } else {
-      warning("input and centerline have different number of rows,
-      returning centerline without attributes")
-      return(longest_path_geos)
+      # Return the `SpatVector` object
+      longest_path_geos <- geos_to_terra(longest_path_geos)
+
+      if (nrow(input_data) == 0) {
+        return(geos_to_terra(longest_path_geos))
+      } else if (nrow(input_data) == nrow(longest_path_geos)) {
+        longest_path_geos <-
+          longest_path_geos |>
+          cbind(input_data)
+        return(longest_path_geos)
+      } else if (nrow(input_data) == 1 && nrow(longest_path_geos) > 1) {
+        longest_path_geos <-
+          longest_path_geos |>
+          cbind(input_data[rep(1, nrow(longest_path_geos)), ])
+        return(longest_path_geos)
+      } else {
+        warning("input and centerline have different number of rows,
+        returning centerline without attributes")
+        return(longest_path_geos)
+      }
     }
   }
 
 cnt_path_guess_master <-
   function(skeleton_geos) {
-    if (
-      geos::geos_type(skeleton_geos) == "multilinestring"
-    ) {
+    if (geos::geos_type(skeleton_geos) == "multilinestring") {
       skeleton_geos <-
         geos::geos_unnest(skeleton_geos, keep_multi = FALSE)
     }

@@ -30,6 +30,8 @@ test_that(
     result <- cnt_path_guess(polygon)
     result_keep1 <- cnt_path_guess(polygon, keep = 1)
     result_straight <- cnt_path_guess(polygon, method = "straight")
+    result_straight_geos <-
+      cnt_path_guess(polygon, method = "s", return_geos = TRUE)
 
     # All objects should be 'sf'
     expect_s3_class(result, "sf")
@@ -40,6 +42,11 @@ test_that(
     expect_contains(get_geom_type(result), "LINESTRING")
     expect_contains(get_geom_type(result_keep1), "LINESTRING")
     expect_contains(get_geom_type(result_straight), "LINESTRING")
+
+    ## Check classes and CRS of the GEOS geometry
+    expect_s3_class(result_straight_geos, c("geos_geometry"))
+    expect_contains(get_geom_type(result_straight_geos), "linestring")
+    expect_equal(wk::wk_crs(result_straight_geos), wk::wk_crs(polygon))
 
     # Outputs are different
     expect_false(
@@ -64,11 +71,17 @@ test_that(
     polygon <- polygon_sf
     skeleton <- skeleton_sf
     result <- cnt_path_guess(polygon, keep = 1)
+    result_geos <- cnt_path_guess(polygon, keep = 1, return_geos = TRUE)
 
     ## Check classes and CRS
     expect_s3_class(result, c("sf"))
     expect_contains(get_geom_type(result), "LINESTRING")
     expect_equal(wk::wk_crs(result), wk::wk_crs(polygon))
+
+    ## Check classes and CRS of the GEOS geometry
+    expect_s3_class(result_geos, c("geos_geometry"))
+    expect_contains(get_geom_type(result_geos), "linestring")
+    expect_equal(wk::wk_crs(result_geos), wk::wk_crs(polygon))
 
     ## Check centerline lengths
     expect_equal(nrow(result), 1)
@@ -167,11 +180,17 @@ test_that(
     polygon <- sf::st_as_sfc(polygon_sf)
     skeleton <- sf::st_as_sfc(skeleton_sf)
     result <- cnt_path_guess(polygon, keep = 1)
+    result_geos <- cnt_path_guess(polygon, keep = 1, return_geos = TRUE)
 
     ## Check classes and CRS
     expect_s3_class(result, c("sfc"))
     expect_contains(get_geom_type(result), "LINESTRING")
     expect_equal(wk::wk_crs(result), wk::wk_crs(polygon))
+
+    ## Check classes and CRS of the GEOS geometry
+    expect_s3_class(result_geos, c("geos_geometry"))
+    expect_contains(get_geom_type(result_geos), "linestring")
+    expect_equal(wk::wk_crs(result_geos), wk::wk_crs(polygon))
 
     ## Check centerline lengths
     expect_length(result, 1)
@@ -366,11 +385,17 @@ test_that(
     polygon <- terra::vect(polygon_sf)
     skeleton <- terra::vect(skeleton_sf)
     result <- cnt_path_guess(polygon, keep = 1)
+    result_geos <- cnt_path_guess(polygon, keep = 1, return_geos = TRUE)
 
     ## Check classes and CRS
     expect_s4_class(result, c("SpatVector"))
     expect_contains(get_geom_type(result), "lines")
     expect_equal(terra::crs(result), terra::crs(polygon))
+
+    ## Check classes and CRS of the GEOS geometry
+    expect_s3_class(result_geos, c("geos_geometry"))
+    expect_contains(get_geom_type(result_geos), "linestring")
+    expect_equal(wk::wk_crs(result_geos), wk::wk_crs(sf::st_as_sf(polygon)))
 
     ## Check centerline lengths
     expect_length(result, 1)

@@ -4,7 +4,7 @@
 \alias{cnt_path_guess}
 \title{Guess polygon's centerline}
 \usage{
-cnt_path_guess(input, skeleton = NULL, ...)
+cnt_path_guess(input, skeleton = NULL, return_geos = FALSE, ...)
 }
 \arguments{
 \item{input}{\code{sf}, \code{sfc} or \code{SpatVector} polygons object}
@@ -13,10 +13,13 @@ cnt_path_guess(input, skeleton = NULL, ...)
 If \code{NULL} then polygon's skeleton would be estimated in the background
 using specified parameters (see inherit params below).}
 
+\item{return_geos}{\code{FALSE} (default). A logical flag that controls
+whether the \code{geos_geometry} should be returned.}
+
 \item{...}{
   Arguments passed on to \code{\link[=cnt_skeleton]{cnt_skeleton}}
   \describe{
-    \item{\code{keep}}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
+    \item{\code{keep}}{numeric, proportion of points to retain (0.05-5.0; default 0.5).
 See Details.}
     \item{\code{method}}{character, either \code{"voronoi"} (default) or
 \code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
@@ -44,7 +47,7 @@ lake <-
     system.file("extdata/example.gpkg", package = "centerline"),
     layer = "lake",
     quiet = TRUE
-  ) |> 
+  ) |>
   geos::as_geos_geometry()
 # Find lake's centerline
 lake_centerline <- cnt_path_guess(input = lake, keep = 1)

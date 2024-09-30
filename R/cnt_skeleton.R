@@ -4,7 +4,7 @@
 #'
 #' @param input \code{sf}, \code{sfc}, \code{SpatVector}, or
 #' \code{geos_geometry} polygons object
-#' @param keep numeric, proportion of points to retain (0.05-Inf; default 0.5).
+#' @param keep numeric, proportion of points to retain (0.05-5.0; default 0.5).
 #' See Details.
 #' @param method character, either \code{"voronoi"} (default) or
 #' \code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
@@ -80,7 +80,7 @@ cnt_skeleton.geos_geometry <-
            method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
-    checkmate::assert_number(keep, lower = 0, upper = 5)
+    checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
     method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Save CRS
@@ -116,7 +116,7 @@ cnt_skeleton.sf <-
            method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
-    checkmate::assert_number(keep, lower = 0, upper = 5)
+    checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
     method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Save CRS
@@ -158,7 +158,7 @@ cnt_skeleton.sfc <-
            method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
-    checkmate::assert_number(keep, lower = 0, upper = 5)
+    checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
     method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Save CRS
@@ -201,7 +201,7 @@ cnt_skeleton.SpatVector <-
 
     # Check input arguments
     stopifnot(check_polygons(input))
-    checkmate::assert_number(keep, lower = 0, upper = 5)
+    checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
     method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
     # Input attributes
