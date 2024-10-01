@@ -7,7 +7,7 @@
 #' centerline will be smoothed with [smoothr::smooth_ksmooth()]
 #'
 #' @inheritParams cnt_skeleton
-#' @inheritDotParams ggplot2::geom_sf
+#' @inheritParams ggplot2::geom_sf
 #'
 #' @inheritSection ggplot2::geom_sf CRS
 #' @inheritSection ggplot2::geom_sf Combining sf layers and regular geoms
@@ -94,10 +94,12 @@ geom_cnt <-
 #'
 #' @param simplify logical, if \code{TRUE} (default) then the
 #' centerline will be smoothed with [smoothr::smooth_ksmooth()]
-#' @inheritParams cnt_skeleton
-#' @inheritDotParams geomtextpath::geom_textsf
 #'
-#' @inheritSection geomtextpath::geom_textsf  Geometry aesthetic
+#' @inheritParams cnt_skeleton
+#' @inheritParams geomtextpath::geom_textsf
+#'
+#' @inheritSection geomtextpath::geom_textpath Aesthetics
+#' @inheritSection geomtextpath::geom_textsf Geometry aesthetic
 #'
 #' @seealso [geom_cnt()], [geomtextpath::geom_textsf()],
 #' [geomtextpath::geom_labelsf()], [ggplot2::geom_sf()]
@@ -119,7 +121,7 @@ geom_cnt <-
 #'   geom_sf(data = lake) +
 #'   geom_cnt_text(
 #'     data = lake,
-#'     aes(label = name),
+#'     aes(label = "Lake Ohau"),
 #'     size = 8,
 #'     simplify = TRUE
 #'   )
@@ -178,7 +180,6 @@ geom_cnt_text <-
 #' @export
 #' @rdname geom_cnt_text
 #' @inheritParams cnt_skeleton
-#' @inheritDotParams geomtextpath::geom_labelsf
 geom_cnt_label <-
   function(mapping = ggplot2::aes(),
            data = NULL,
