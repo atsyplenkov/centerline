@@ -41,7 +41,13 @@ geos_ms_densify <-
 
 geos_ksmooth <-
   function(input) {
+    do.call(c, lapply(input, geos_ksmooth_master))
+  }
+
+geos_ksmooth_master <-
+  function(input) {
     check_package("smoothr")
+    checkmate::assert_class(input, "geos_geometry")
 
     crs <- wk::wk_crs(input)
 
