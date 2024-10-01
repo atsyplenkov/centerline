@@ -134,68 +134,41 @@ path will be removed.}
 Binding for \code{\link[geomtextpath:geom_textsf]{geomtextpath::geom_textsf()}} and
 \code{\link[geomtextpath:geom_textsf]{geomtextpath::geom_labelsf()}}
 }
-\section{Aesthetics}{
+\details{
+\subsection{Aesthetics}{
 
-
-\code{geom_textpath()} understands the following aesthetics (required aesthetics are in bold):
+\code{geom_cnt_text()} understands the following aesthetics:
 \itemize{
-  \item \strong{\code{x}}
-  \item \strong{\code{y}}
-  \item \strong{\code{label}}
-  \item \code{alpha}
-  \item \code{angle}
-  \item \code{colour}
-  \item \code{family}
-  \item \code{fontface}
-  \item \code{group}
-  \item \code{hjust}
-  \item \code{linecolour}
-  \item \code{lineheight}
-  \item \code{linetype}
-  \item \code{linewidth}
-  \item \code{size}
-  \item \code{spacing}
-  \item \code{textcolour}
-  \item \code{vjust}
+\item \code{x}
+\item \code{y}
+\item \code{label}
+\item \code{alpha}
+\item \code{angle}
+\item \code{colour}
+\item \code{family}
+\item \code{fontface}
+\item \code{group}
+\item \code{hjust}
+\item \code{linecolour}
+\item \code{lineheight}
+\item \code{linetype}
+\item \code{linewidth}
+\item \code{size}
+\item \code{spacing}
+\item \code{textcolour}
+\item \code{vjust}
 }
-In addition to aforementioned aesthetics, \code{geom_labelpath()} also understands:
+
+In addition to aforementioned aesthetics, \code{geom_cnt_label()} also
+understands:
 \itemize{
-  \item \code{boxcolour}
-  \item \code{boxlinetype}
-  \item \code{boxlinewidth}
-  \item \code{fill}
+\item \code{boxcolour}
+\item \code{boxlinetype}
+\item \code{boxlinewidth}
+\item \code{fill}
 }
-The \code{spacing} aesthetic allows fine control of spacing
- of text, which is called 'tracking' in typography.
-The default is 0 and units are measured in 1/1000 em.
-Numbers greater than zero increase the spacing,
-whereas negative numbers decrease the spacing.
-
-
-Learn more about setting these aesthetics 
-in \code{vignette("ggplot2-specs")}.
-
 }
-
-\section{Geometry aesthetic}{
-
-
-\code{geom_textsf()} uses a unique aesthetic: \code{geometry}, giving an
-column of class \code{sfc} containing simple features data. There
-are three ways to supply the \code{geometry} aesthetic:
-\itemize{
-\item Do nothing: by default \code{geom_textsf()} assumes it is stored in
-the \code{geometry} column.
-\item Explicitly pass an \code{sf} object to the \code{data} argument.
-This will use the primary geometry column, no matter what it's called.
-\item Supply your own using \code{aes(geometry = my_column)}
 }
-
-Unlike other aesthetics, \code{geometry} will never be inherited from
-the plot.
-
-}
-
 \examples{
 \dontshow{if (requireNamespace("geomtextpath", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 library(sf)
@@ -208,12 +181,25 @@ lake <-
     quiet = TRUE
   )
 
+# Plot centerline and lake name as text
 ggplot() +
   geom_sf(data = lake) +
   geom_cnt_text(
     data = lake,
     aes(label = "Lake Ohau"),
     size = 8,
+    simplify = TRUE
+  )
+
+# Plot lake name as label
+ggplot() +
+  geom_sf(data = lake) +
+  geom_cnt_label(
+    data = lake,
+    aes(label = "Lake Ohau"),
+    linecolor = NA, # disable line drawing
+    size = 20,
+    method = "s",
     simplify = TRUE
   )
 \dontshow{\}) # examplesIf}

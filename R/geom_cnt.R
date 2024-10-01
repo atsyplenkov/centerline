@@ -12,9 +12,9 @@
 #' @inheritSection ggplot2::geom_sf CRS
 #' @inheritSection ggplot2::geom_sf Combining sf layers and regular geoms
 #'
-#' @return A `Layer` ggproto object that can be added to a plot.
-#'
 #' @seealso [geom_cnt_text()], [geom_cnt_label()], [ggplot2::geom_sf()]
+#'
+#' @return A `Layer` ggproto object that can be added to a plot.
 #'
 #' @export
 #'
@@ -54,6 +54,7 @@ geom_cnt <-
     # Check if the input data is an sf object
     checkmate::assert_class(data, "sf")
     check_polygons(data)
+    checkmate::assert_logical(simplify)
 
     data_centerline_geos <-
       cnt_path_guess(
@@ -64,6 +65,7 @@ geom_cnt <-
       )
 
     if (simplify) {
+      check_package("smoothr")
       data_centerline <-
         geos_ksmooth(data_centerline_geos) |>
         sf::st_as_sf() |>
@@ -98,8 +100,38 @@ geom_cnt <-
 #' @inheritParams cnt_skeleton
 #' @inheritParams geomtextpath::geom_textsf
 #'
-#' @inheritSection geomtextpath::geom_textpath Aesthetics
-#' @inheritSection geomtextpath::geom_textsf Geometry aesthetic
+#' @details
+#' ## Aesthetics
+#' \code{geom_cnt_text()} understands the following aesthetics:
+#' \itemize{
+#'   \item `x`
+#'   \item `y`
+#'   \item `label`
+#'   \item `alpha`
+#'   \item `angle`
+#'   \item `colour`
+#'   \item `family`
+#'   \item `fontface`
+#'   \item `group`
+#'   \item `hjust`
+#'   \item `linecolour`
+#'   \item `lineheight`
+#'   \item `linetype`
+#'   \item `linewidth`
+#'   \item `size`
+#'   \item `spacing`
+#'   \item `textcolour`
+#'   \item `vjust`
+#' }
+#'
+#' In addition to aforementioned aesthetics, \code{geom_cnt_label()} also
+#' understands:
+#' \itemize{
+#'   \item `boxcolour`
+#'   \item `boxlinetype`
+#'   \item `boxlinewidth`
+#'   \item `fill`
+#' }
 #'
 #' @seealso [geom_cnt()], [geomtextpath::geom_textsf()],
 #' [geomtextpath::geom_labelsf()], [ggplot2::geom_sf()]
@@ -117,12 +149,25 @@ geom_cnt <-
 #'     quiet = TRUE
 #'   )
 #'
+#' # Plot centerline and lake name as text
 #' ggplot() +
 #'   geom_sf(data = lake) +
 #'   geom_cnt_text(
 #'     data = lake,
 #'     aes(label = "Lake Ohau"),
 #'     size = 8,
+#'     simplify = TRUE
+#'   )
+#'
+#' # Plot lake name as label
+#' ggplot() +
+#'   geom_sf(data = lake) +
+#'   geom_cnt_label(
+#'     data = lake,
+#'     aes(label = "Lake Ohau"),
+#'     linecolor = NA, # disable line drawing
+#'     size = 20,
+#'     method = "s",
 #'     simplify = TRUE
 #'   )
 #'
@@ -143,6 +188,7 @@ geom_cnt_text <-
     # Check if the input data is an sf object
     checkmate::assert_class(data, "sf")
     check_polygons(data)
+    checkmate::assert_logical(simplify)
 
     data_centerline_geos <-
       cnt_path_guess(
@@ -153,6 +199,7 @@ geom_cnt_text <-
       )
 
     if (simplify) {
+      check_package("smoothr")
       data_centerline <-
         geos_ksmooth(data_centerline_geos) |>
         sf::st_as_sf() |>
@@ -197,6 +244,7 @@ geom_cnt_label <-
     # Check if the input data is an sf object
     checkmate::assert_class(data, "sf")
     check_polygons(data)
+    checkmate::assert_logical(simplify)
 
     data_centerline_geos <-
       cnt_path_guess(
@@ -207,6 +255,7 @@ geom_cnt_label <-
       )
 
     if (simplify) {
+      check_package("smoothr")
       data_centerline <-
         geos_ksmooth(data_centerline_geos) |>
         sf::st_as_sf() |>
