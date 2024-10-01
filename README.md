@@ -235,48 +235,37 @@ lengths](https://www.lakescientist.com/lake-shape/), for example.
 lake_centerline <- cnt_path_guess(lake, keep = 1)
 ```
 
+You can plot polygon centerlines with the `geom_cnt_*` functions family:
+
 <details>
 <summary>
 cnt_path_guess() code 👇
 </summary>
 
 ``` r
-library(geomtextpath)
-library(smoothr)
+library(ggplot2)
 
-lake_centerline_s <-
-  lake_centerline |>
-  sf::st_simplify(dTolerance = 150) |>
-  smoothr::smooth("chaikin")
+lakes <- rbind(lake, lake)
+lakes$lc <- c("black", NA_character_) 
 
-cnt2 <-
-  rbind(
-    lake_centerline_s,
-    lake_centerline_s
-  )
-
-cnt2$lc <- c("black", NA_character_)
-cnt2$ll <- c("", lake$name)
-
-centerline_plot <- ggplot() +
+centerline_plot <- 
+  ggplot() +
   geom_sf(
-    data = lake,
+    data = lakes,
     fill = "#c8e8f1",
     color = NA
   ) +
-  geom_textsf(
-    data = cnt2,
+  geom_cnt_text(
+    data = lakes,
     aes(
-      linecolor = lc,
-      label = ll
+      label = name,
+      linecolor = lc
     ),
-    color = "#458894",
-    size = 5
+    keep = 1
   ) +
-  scale_color_identity() +
   facet_wrap(~lc) +
   labs(
-    caption = "cnt_path_guess() example"
+    caption = "cnt_path_guess() and geom_cnt_text() examples"
   ) +
   theme_void() +
   theme(

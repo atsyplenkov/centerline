@@ -1,3 +1,10 @@
+centerline 0.2 (2024-10-01)
+=========================
+
+### UPDATES
+
+  * `geom_cnt_*` function family for plotting centerlines with ggplot2
+
 centerline 0.1.3 (2024-09-29)
 =========================
 

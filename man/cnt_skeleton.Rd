@@ -10,7 +10,7 @@ cnt_skeleton(input, keep = 0.5, method = "voronoi")
 \item{input}{\code{sf}, \code{sfc}, \code{SpatVector}, or
 \code{geos_geometry} polygons object}
 
-\item{keep}{numeric, proportion of points to retain (0.05-Inf; default 0.5).
+\item{keep}{numeric, proportion of points to retain (0.05-5.0; default 0.5).
 See Details.}
 
 \item{method}{character, either \code{"voronoi"} (default) or

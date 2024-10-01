@@ -39,6 +39,33 @@ geos_ms_densify <-
     )
   }
 
+geos_ksmooth <-
+  function(input) {
+    do.call(c, lapply(input, geos_ksmooth_master))
+  }
+
+geos_ksmooth_master <-
+  function(input) {
+    check_package("smoothr")
+    checkmate::assert_class(input, "geos_geometry")
+
+    crs <- wk::wk_crs(input)
+
+    num_coords <-
+      geos::geos_num_coordinates(input)
+    cent_length <-
+      geos::geos_length(input)
+    simpl_tolerance <- cent_length / num_coords
+
+    m <- input |>
+      geos::geos_simplify(tolerance = simpl_tolerance) |>
+      geos_to_matrix()
+
+    m <- smoothr::smooth_ksmooth(m, wrap = FALSE)
+
+    geos::geos_make_linestring(m[, 1], m[, 2], crs = crs)
+  }
+
 # Reverse lines if needed ------------------------------------------------
 # Check if we need to reverse the lines
 reverse_lines_if_needed <-
@@ -106,13 +133,6 @@ find_closest_nodes <-
   }
 
 # Straight skeleton helpers ----------------------------------------------
-# geos_geometry polygon to matrix of coordinates
-geos_to_matrix <-
-  function(geos_obj) {
-    coords <- wk::wk_coords(geos_obj)
-    matrix(c(coords$x, coords$y), ncol = 2)
-  }
-
 # Extract ring from polygon
 # If the i == 1, it returns the polygon itself
 get_geos_ring <-

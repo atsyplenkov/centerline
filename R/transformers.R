@@ -42,3 +42,10 @@ geos_to_terra <-
       crs = wk::wk_crs(wk_input)$wkt
     )
   }
+
+# geos_geometry polygon to matrix of coordinates
+geos_to_matrix <-
+  function(geos_obj) {
+    coords <- wk::wk_coords(geos_obj)
+    matrix(c(coords$x, coords$y), ncol = 2)
+  }
