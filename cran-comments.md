@@ -15,7 +15,7 @@ Minor release of centerline package, introducing website, new family of
 0 errors | 0 warnings | 0 notes
 
 ## local R CMD check results
-0 errors | 0 warnings | 3 notes
+0 errors | 0 warnings | 2 notes
 
 - All notes appear to be related to my local testing environment, since 
 I haven't seen them during remote testing
