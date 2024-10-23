@@ -189,7 +189,8 @@ ggplot() +
     aes(label = "Lake Ohau"),
     size = 8,
     simplify = TRUE
-  )
+  ) +
+theme_void()
 
 # Plot lake name as label
 ggplot() +
@@ -198,10 +199,11 @@ ggplot() +
     data = lake,
     aes(label = "Lake Ohau"),
     linecolor = NA, # disable line drawing
-    size = 20,
+    size = 10,
     method = "s",
     simplify = TRUE
-  )
+  ) +
+theme_void()
 \dontshow{\}) # examplesIf}
 }
 \seealso{

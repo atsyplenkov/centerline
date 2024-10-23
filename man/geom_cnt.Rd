@@ -182,7 +182,8 @@ ggplot() +
     data = lake,
     keep = 1,
     simplify = TRUE
-  )
+  ) +
+  theme_void()
 \dontshow{\}) # examplesIf}
 }
 \seealso{

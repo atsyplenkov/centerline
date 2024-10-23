@@ -35,7 +35,8 @@
 #'     data = lake,
 #'     keep = 1,
 #'     simplify = TRUE
-#'   )
+#'   ) +
+#'   theme_void()
 #'
 geom_cnt <-
   function(mapping = ggplot2::aes(),
@@ -157,7 +158,8 @@ geom_cnt <-
 #'     aes(label = "Lake Ohau"),
 #'     size = 8,
 #'     simplify = TRUE
-#'   )
+#'   ) +
+#' theme_void()
 #'
 #' # Plot lake name as label
 #' ggplot() +
@@ -166,10 +168,11 @@ geom_cnt <-
 #'     data = lake,
 #'     aes(label = "Lake Ohau"),
 #'     linecolor = NA, # disable line drawing
-#'     size = 20,
+#'     size = 10,
 #'     method = "s",
 #'     simplify = TRUE
-#'   )
+#'   ) +
+#' theme_void()
 #'
 geom_cnt_text <-
   function(mapping = ggplot2::aes(),
