@@ -20,11 +20,6 @@ Minor release of centerline package, introducing website, new family of
 - All notes appear to be related to my local testing environment, since 
 I haven't seen them during remote testing
 
-* checking CRAN incoming feasibility ... [35s] NOTE
-  Maintainer: 'Anatoly Tsyplenkov <atsyplenkov@fastmail.com>'
-  
-  Days since last update: 5
-
 * checking for non-standard things in the check directory ... NOTE
   Found the following files/directories:
     ''NULL''
