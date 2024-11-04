@@ -36,7 +36,6 @@
 #' @examples
 #' library(sf)
 #' library(geos)
-
 #' # Load Polygon and points data
 #' polygon <-
 #'   sf::st_read(
