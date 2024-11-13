@@ -18,7 +18,9 @@
 #'
 #' @export
 #'
-#' @examplesIf requireNamespace("geomtextpath", quietly = TRUE)
+#' @examples
+#' \donttest{
+#' if (requireNamespace("geomtextpath", quietly = TRUE)) {
 #' library(sf)
 #' library(ggplot2)
 #'
@@ -37,7 +39,8 @@
 #'     simplify = TRUE
 #'   ) +
 #'   theme_void()
-#'
+#' }
+#' }
 geom_cnt <-
   function(mapping = ggplot2::aes(),
            data = NULL,
