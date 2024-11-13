@@ -8,6 +8,8 @@
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml)
+[![Check CRAN
+status](https://github.com/atsyplenkov/centerline/actions/workflows/CRAN-checks.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/CRAN-checks.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
 [![CRAN
