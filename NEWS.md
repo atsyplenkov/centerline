@@ -1,3 +1,11 @@
+centerline 0.2.2 (2025-03-16)
+=========================
+
+### UPDATES
+
+  * the `raybevel` package is back on CRAN
+  * Added the explicit R>= 4.1.0 dependency
+
 centerline 0.2.1 (2024-11-05)
 =========================
 

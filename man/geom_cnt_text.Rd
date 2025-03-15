@@ -124,8 +124,6 @@ of \code{0} means no smoothing is applied.}
     \item{\code{rich}}{A \code{logical(1)} whether to interpret the text as html/markdown
 formatted rich text. Default: \code{FALSE}. See also the rich text section of
 the details in \code{\link[geomtextpath:geom_textpath]{geom_textpath()}}.}
-    \item{\code{remove_long}}{if TRUE, labels that are longer than their associated
-path will be removed.}
     \item{\code{label.padding}}{Amount of padding around label. Defaults to 0.25 lines.}
     \item{\code{label.r}}{Radius of rounded corners. Defaults to 0.15 lines.}
   }}

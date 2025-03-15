@@ -1,13 +1,14 @@
-# centerline v0.2.1
+# centerline v0.2.2
 Major release of centerline package, introducing website, new family of
-`geom_cnt_*()` functions and new method to generate polygon skeletons. The latter depends on the `raybevel` package which was archived on CRAN on October 22, 2024. It is not a core dependency, but it is crucial for some functions in the `centerline` pkg. To maintain `raybevel::skeletonize` accessibility for the `cnt_skeleton` function, `raybevel` is temporarily installed from GitHub. See notes of the R CMD check results.
+`geom_cnt_*()` functions and new method to generate polygon skeletons. This update also solves the current CRAN ERRORs and NOTES associated with a missing R >= 4.1.0 dependency
 
 ## Test environments
 * local Windows 10 install, R 4.4.1 patched
-* github actions Microsoft Windows Server 2022 10.0.20348, R 4.4.1
-* github actions macOS (ARM64) 14.6.1, R 4.4.1
-* github actions Ubuntu 22.04.05, R 4.4.1
-* github actions Ubuntu 22.04.05, R 4.4.1 (No Suggests)
+* local Debian 12 install, R 4.4.2 patched
+* github actions Microsoft Windows Server 2022 10.0.20348, R 4.4.2
+* github actions macOS (ARM64) 14.6.1, R 4.4.2
+* github actions Ubuntu 22.04.05, R 4.4.2
+* github actions Ubuntu 22.04.05, R 4.4.2 (No Suggests)
 * github actions Ubuntu 22.04.05, R-devel
 * github actions Ubuntu 22.04.05, R 4.3.3
 
@@ -15,7 +16,7 @@ Major release of centerline package, introducing website, new family of
 0 errors | 0 warnings | 0 notes
 
 ## local R CMD check results
-0 errors | 0 warnings | 3 notes
+0 errors | 0 warnings | 1 notes
 
 * checking CRAN incoming feasibility ... [39s] NOTE
   Maintainer: 'Anatoly Tsyplenkov <atsyplenkov@fastmail.com>'
@@ -28,13 +29,8 @@ Major release of centerline package, introducing website, new family of
 
 > Notes below appear to be related to my local testing environment, since I haven't seen them during remote testing
 
-* checking for non-standard things in the check directory ... NOTE
-  Found the following files/directories:
-    ''NULL''
-
-* checking for detritus in the temp directory ... NOTE
-  Found the following files/directories:
-    'lastMiKTeXException'
+* checking for future file timestamps ... NOTE
+  unable to verify current time
 
 ## revdepcheck results
 
