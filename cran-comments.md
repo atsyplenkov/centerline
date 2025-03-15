@@ -18,15 +18,6 @@ Major release of centerline package, introducing website, new family of
 ## local R CMD check results
 0 errors | 0 warnings | 1 notes
 
-* checking CRAN incoming feasibility ... [39s] NOTE
-  Maintainer: 'Anatoly Tsyplenkov <atsyplenkov@fastmail.com>'
-  
-  Unknown, possibly misspelled, fields in DESCRIPTION:
-    'Remotes'
-  
-  Suggests or Enhances not in mainstream repositories:
-    raybevel
-
 > Notes below appear to be related to my local testing environment, since I haven't seen them during remote testing
 
 * checking for future file timestamps ... NOTE
