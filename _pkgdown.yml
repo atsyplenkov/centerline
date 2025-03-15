@@ -23,5 +23,5 @@ footer:
     left: [developed_by]
     right: [legal]
   components:
-    legal: "[MIT](https://opensource.org/license/mit) License | Copyright (c) 2024 centerline authors"
+    legal: "[MIT](https://opensource.org/license/mit) License | Copyright (c) 2025 centerline authors"
     developed_by: Developed by [Anatolii Tsyplenkov](https://github.com/atsyplenkov)
