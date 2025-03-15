@@ -71,17 +71,13 @@
 #' plot(pol_path, lwd = 3, add = TRUE)
 
 cnt_path <-
-  function(skeleton,
-           start_point,
-           end_point) {
+  function(skeleton, start_point, end_point) {
     UseMethod("cnt_path")
   }
 
 #' @export
 cnt_path.geos_geometry <-
-  function(skeleton,
-           start_point,
-           end_point) {
+  function(skeleton, start_point, end_point) {
     # Check input classes
     stopifnot(check_lines(skeleton))
     stopifnot(check_points(start_point))
@@ -92,9 +88,7 @@ cnt_path.geos_geometry <-
       end_point
     )
 
-    if (
-      any(get_geom_type(skeleton) == "multilinestring")
-    ) {
+    if (any(get_geom_type(skeleton) == "multilinestring")) {
       skeleton <-
         geos::geos_unnest(skeleton, keep_multi = FALSE)
     }
@@ -113,9 +107,7 @@ cnt_path.geos_geometry <-
 
 #' @export
 cnt_path.sf <-
-  function(skeleton,
-           start_point,
-           end_point) {
+  function(skeleton, start_point, end_point) {
     # Check input classes
     stopifnot(check_lines(skeleton))
     stopifnot(check_points(start_point))
@@ -126,9 +118,7 @@ cnt_path.sf <-
       end_point
     )
 
-    if (
-      any(get_geom_type(skeleton) == "MULTILINESTRING")
-    ) {
+    if (any(get_geom_type(skeleton) == "MULTILINESTRING")) {
       skeleton <-
         sf::st_cast(skeleton, "LINESTRING")
     }
@@ -141,17 +131,13 @@ cnt_path.sf <-
 
 #' @export
 cnt_path.sfc <-
-  function(skeleton,
-           start_point,
-           end_point) {
+  function(skeleton, start_point, end_point) {
     # Check input classes
     stopifnot(check_lines(skeleton))
     stopifnot(check_points(start_point))
     stopifnot(check_points(end_point))
 
-    if (
-      any(get_geom_type(skeleton) == "MULTILINESTRING")
-    ) {
+    if (any(get_geom_type(skeleton) == "MULTILINESTRING")) {
       skeleton <-
         sf::st_cast(skeleton, "LINESTRING")
     }
@@ -163,9 +149,7 @@ cnt_path.sfc <-
 
 #' @export
 cnt_path.SpatVector <-
-  function(skeleton,
-           start_point,
-           end_point) {
+  function(skeleton, start_point, end_point) {
     # Check input classes
     stopifnot(check_lines(skeleton))
     stopifnot(check_points(start_point))
@@ -187,9 +171,7 @@ cnt_path.SpatVector <-
     end_point <-
       sf::st_as_sf(end_point)
 
-    if (
-      any(get_geom_type(skeleton) == "MULTILINESTRING")
-    ) {
+    if (any(get_geom_type(skeleton) == "MULTILINESTRING")) {
       skeleton <-
         sf::st_cast(skeleton, "LINESTRING")
     }
@@ -204,9 +186,7 @@ cnt_path.SpatVector <-
 
 
 cnt_path_master <-
-  function(skeleton_sf,
-           start_point_sf,
-           end_point_sf) {
+  function(skeleton_sf, start_point_sf, end_point_sf) {
     # Convert skeleton sf object to sfnetworks
     pol_network <-
       sfnetworks::as_sfnetwork(
@@ -231,8 +211,7 @@ cnt_path_master <-
 
     # Check if there are several end nodes
     stopifnot(
-      "Only one end point is allowed" =
-        length(end_nodes) == 1
+      "Only one end point is allowed" = length(end_nodes) == 1
     )
 
     # Find the shortest path between two points

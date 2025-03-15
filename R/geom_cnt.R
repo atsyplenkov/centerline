@@ -42,17 +42,19 @@
 #' }
 #' }
 geom_cnt <-
-  function(mapping = ggplot2::aes(),
-           data = NULL,
-           stat = "sf",
-           position = "identity",
-           na.rm = FALSE,
-           show.legend = NA,
-           inherit.aes = TRUE,
-           keep = 0.5,
-           method = c("voronoi", "straight"),
-           simplify = TRUE,
-           ...) {
+  function(
+    mapping = ggplot2::aes(),
+    data = NULL,
+    stat = "sf",
+    position = "identity",
+    na.rm = FALSE,
+    show.legend = NA,
+    inherit.aes = TRUE,
+    keep = 0.5,
+    method = c("voronoi", "straight"),
+    simplify = TRUE,
+    ...
+  ) {
     check_package("ggplot2")
 
     # Check if the input data is an sf object
@@ -178,17 +180,19 @@ geom_cnt <-
 #' theme_void()
 #'
 geom_cnt_text <-
-  function(mapping = ggplot2::aes(),
-           data = NULL,
-           stat = "sf",
-           position = "identity",
-           na.rm = FALSE,
-           show.legend = NA,
-           inherit.aes = TRUE,
-           keep = 0.5,
-           method = c("voronoi", "straight"),
-           simplify = TRUE,
-           ...) {
+  function(
+    mapping = ggplot2::aes(),
+    data = NULL,
+    stat = "sf",
+    position = "identity",
+    na.rm = FALSE,
+    show.legend = NA,
+    inherit.aes = TRUE,
+    keep = 0.5,
+    method = c("voronoi", "straight"),
+    simplify = TRUE,
+    ...
+  ) {
     check_package("geomtextpath")
 
     # Check if the input data is an sf object
@@ -234,17 +238,19 @@ geom_cnt_text <-
 #' @rdname geom_cnt_text
 #' @inheritParams cnt_skeleton
 geom_cnt_label <-
-  function(mapping = ggplot2::aes(),
-           data = NULL,
-           stat = "sf",
-           position = "identity",
-           na.rm = FALSE,
-           show.legend = NA,
-           inherit.aes = TRUE,
-           keep = 0.5,
-           method = c("voronoi", "straight"),
-           simplify = TRUE,
-           ...) {
+  function(
+    mapping = ggplot2::aes(),
+    data = NULL,
+    stat = "sf",
+    position = "identity",
+    na.rm = FALSE,
+    show.legend = NA,
+    inherit.aes = TRUE,
+    keep = 0.5,
+    method = c("voronoi", "straight"),
+    simplify = TRUE,
+    ...
+  ) {
     check_package("geomtextpath")
 
     # Check if the input data is an sf object

@@ -1,8 +1,7 @@
 # Polygon simplifications ------------------------------------------------
 # Fast simplification, similiar to {mapshaper} ms_simplify
 geos_ms_simplify <-
-  function(geom,
-           keep) {
+  function(geom, keep) {
     perimeter_length <-
       geos::geos_length(geom)
 
@@ -21,8 +20,7 @@ geos_ms_simplify <-
 
 # Fast densification, similar behavior to {mapshaper} ms_simplify
 geos_ms_densify <-
-  function(geom,
-           keep) {
+  function(geom, keep) {
     perimeter_length <-
       geos::geos_length(geom)
 

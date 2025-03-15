@@ -15,7 +15,7 @@ check_same_class <-
 
     class_check <-
       base::identical(class1, class2) &&
-        base::identical(class1, class3)
+      base::identical(class1, class3)
 
     if (!class_check) {
       stop("All objects must share the same class.")
@@ -48,8 +48,10 @@ check_polygons <-
     # Check if geometry type is POLYGON
     geom_type <- get_geom_type(input)
     if (
-      !all(geom_type %in%
-        c("POLYGON", "polygons", "polygon", "multipolygon", "MULTIPOLYGON"))
+      !all(
+        geom_type %in%
+          c("POLYGON", "polygons", "polygon", "multipolygon", "MULTIPOLYGON")
+      )
     ) {
       stop("Input does not contain 'POLYGON' or 'MULTIPOLYGON' geometries.")
     }
@@ -72,11 +74,17 @@ check_lines <-
     # Check if geometry type is LINESTRING
     geom_type <- get_geom_type(input)
     if (
-      !all(geom_type %in%
-        c(
-          "LINESTRING", "lines", "linestring",
-          "multilinestring", "MULTILINESTRING"
-        ))) {
+      !all(
+        geom_type %in%
+          c(
+            "LINESTRING",
+            "lines",
+            "linestring",
+            "multilinestring",
+            "MULTILINESTRING"
+          )
+      )
+    ) {
       stop("Input skeleton does not contain 'LINESTRING' geometry.")
     }
 

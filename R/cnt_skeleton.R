@@ -20,10 +20,10 @@
 #' geometry would be simplified, and the resulting skeleton will be cleaner but
 #' maybe more edgy.
 #' The current realisation of simplification is similar (*but not identical*)
-#' to [rmapshaper::ms_simplify()] one with Douglas-Peuker algorithm. However,
-#' due to \code{geos} superpower, it performs several times faster.
+#' to \code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm.
+#' However, due to \code{geos} superpower, it performs several times faster.
 #' If you find that the built-in simplification algorithm performs poorly,
-#' try [rmapshaper::ms_simplify()] first and then find the polygon skeleton
+#' try \code{rmapshaper::ms_simplify()} first and then find the polygon skeleton
 #' with \code{keep = 1}, i.e.
 #' \code{cnt_skeleton(rmapshaper::ms_simplify(polygon_sf), keep = 1)}
 #'
@@ -75,9 +75,7 @@ cnt_skeleton <-
 
 #' @export
 cnt_skeleton.geos_geometry <-
-  function(input,
-           keep = 0.5,
-           method = c("voronoi", "straight")) {
+  function(input, keep = 0.5, method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
     checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
@@ -111,9 +109,7 @@ cnt_skeleton.geos_geometry <-
 
 #' @export
 cnt_skeleton.sf <-
-  function(input,
-           keep = 0.5,
-           method = c("voronoi", "straight")) {
+  function(input, keep = 0.5, method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
     checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
@@ -153,9 +149,7 @@ cnt_skeleton.sf <-
 
 #' @export
 cnt_skeleton.sfc <-
-  function(input,
-           keep = 0.5,
-           method = c("voronoi", "straight")) {
+  function(input, keep = 0.5, method = c("voronoi", "straight")) {
     # Check input arguments
     stopifnot(check_polygons(input))
     checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
@@ -194,9 +188,7 @@ cnt_skeleton.sfc <-
 
 #' @export
 cnt_skeleton.SpatVector <-
-  function(input,
-           keep = 0.5,
-           method = c("voronoi", "straight")) {
+  function(input, keep = 0.5, method = c("voronoi", "straight")) {
     check_package("terra")
 
     # Check input arguments
@@ -243,15 +235,16 @@ cnt_skeleton.SpatVector <-
         cbind(input_data[rep(1, nrow(pol_skeleton_crs)), ])
       return(pol_skeleton_crs)
     } else {
-      warning("input and skeleton have different number of rows,
-      returning skeleton without attributes")
+      warning(
+        "input and skeleton have different number of rows,
+      returning skeleton without attributes"
+      )
       return(pol_skeleton_crs)
     }
   }
 
 cnt_skeleton_geos <-
-  function(input,
-           keep = 0.5) {
+  function(input, keep = 0.5) {
     # Simplify or densify or do nothing
     if (keep == 1) {
       pol_geos <- input
@@ -283,8 +276,7 @@ cnt_skeleton_geos <-
   }
 
 cnt_skeleton_straight <-
-  function(input,
-           keep = 0.5) {
+  function(input, keep = 0.5) {
     check_package("raybevel")
 
     if (keep > 1) {

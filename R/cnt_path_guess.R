@@ -39,18 +39,13 @@
 #' plot(lake_centerline, col = "firebrick", lwd = 2, add = TRUE)
 #'
 cnt_path_guess <-
-  function(input,
-           skeleton = NULL,
-           return_geos = FALSE,
-           ...) {
+  function(input, skeleton = NULL, return_geos = FALSE, ...) {
     UseMethod("cnt_path_guess")
   }
 
 #' @export
 cnt_path_guess.geos_geometry <-
-  function(input,
-           skeleton = NULL,
-           ...) {
+  function(input, skeleton = NULL, ...) {
     # Check if input is of geometry type 'POLYGON'
     stopifnot(check_polygons(input))
     input_geom_type <- get_geom_type(input)
@@ -86,10 +81,7 @@ cnt_path_guess.geos_geometry <-
 
 #' @export
 cnt_path_guess.sf <-
-  function(input,
-           skeleton = NULL,
-           return_geos = FALSE,
-           ...) {
+  function(input, skeleton = NULL, return_geos = FALSE, ...) {
     # Check if input is of class 'sf' or 'sfc' and 'POLYGON'
     stopifnot(check_polygons(input))
 
@@ -135,10 +127,7 @@ cnt_path_guess.sf <-
 
 #' @export
 cnt_path_guess.sfc <-
-  function(input,
-           skeleton = NULL,
-           return_geos = FALSE,
-           ...) {
+  function(input, skeleton = NULL, return_geos = FALSE, ...) {
     # Check if input is of class 'POLYGON'
     stopifnot(check_polygons(input))
 
@@ -183,10 +172,7 @@ cnt_path_guess.sfc <-
 
 #' @export
 cnt_path_guess.SpatVector <-
-  function(input,
-           skeleton = NULL,
-           return_geos = FALSE,
-           ...) {
+  function(input, skeleton = NULL, return_geos = FALSE, ...) {
     # Check if input is of class 'POLYGON'
     stopifnot(check_polygons(input))
 
@@ -241,8 +227,10 @@ cnt_path_guess.SpatVector <-
           cbind(input_data[rep(1, nrow(longest_path_geos)), ])
         return(longest_path_geos)
       } else {
-        warning("input and centerline have different number of rows,
-        returning centerline without attributes")
+        warning(
+          "input and centerline have different number of rows,
+        returning centerline without attributes"
+        )
         return(longest_path_geos)
       }
     }
