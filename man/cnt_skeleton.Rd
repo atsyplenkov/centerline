@@ -34,10 +34,10 @@ function will be used. So the original input
 geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
 The current realisation of simplification is similar (\emph{but not identical})
-to \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} one with Douglas-Peuker algorithm. However,
-due to \code{geos} superpower, it performs several times faster.
+to \code{rmapshaper::ms_simplify()} one with Douglas-Peuker algorithm.
+However, due to \code{geos} superpower, it performs several times faster.
 If you find that the built-in simplification algorithm performs poorly,
-try \code{\link[rmapshaper:ms_simplify]{rmapshaper::ms_simplify()}} first and then find the polygon skeleton
+try \code{rmapshaper::ms_simplify()} first and then find the polygon skeleton
 with \code{keep = 1}, i.e.
 \code{cnt_skeleton(rmapshaper::ms_simplify(polygon_sf), keep = 1)}
 \item If the \code{keep} is above 1, then the densification

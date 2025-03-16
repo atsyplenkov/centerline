@@ -165,8 +165,7 @@ in projected coordinates.
 }
 
 \examples{
-\donttest{
-if (requireNamespace("geomtextpath", quietly = TRUE)) {
+\dontshow{if (requireNamespace("geomtextpath", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 library(sf)
 library(ggplot2)
 
@@ -185,8 +184,7 @@ ggplot() +
     simplify = TRUE
   ) +
   theme_void()
-}
-}
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[=geom_cnt_text]{geom_cnt_text()}}, \code{\link[=geom_cnt_label]{geom_cnt_label()}}, \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}}
