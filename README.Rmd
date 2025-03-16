@@ -106,7 +106,9 @@ skeletons_plot <-
     panel.spacing.x = unit(-2, "lines")
   )
 ```
+
 </details>
+
 ```{r save_skeletons, include=FALSE}
 ggsave(
   "man/figures/README-skeletons_plot.png",

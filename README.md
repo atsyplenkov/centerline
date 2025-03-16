@@ -301,24 +301,25 @@ centerline_plot <-
 
 ## Alternatives
 
-- **R**
-  - [midlines](https://github.com/RichardPatterson/midlines) - A more
-    hydrology-oriented library that provides a multi-step approach to
-    generate a smooth centerline of complex curved polygons (like
-    rivers).
-  - [cmgo](https://github.com/AntoniusGolly/cmgo) - The main aim of the
-    package is to propose a workflow to extract channel bank metrics,
-    and as a part of that workflow, centerline extraction was
-    implemented.
-  - [raybevel](https://github.com/tylermorganwall/raybevel) - Provides a
-    way to generate **straight** skeletons of polygons. This approach is
-    implemented in the `cnt_skeleton(method = "straight")` function of
-    the current package.
-- 🐍 Python:
-  - [centerline](https://github.com/fitodic/centerline/tree/master)
-    library
-- 🦀 Rust:
-  - [centerline_rs](https://codeberg.org/eadf/centerline_rs) library
-- **JS** Javascript:
-  - [Centerline labeling
-    blogpost](https://observablehq.com/@veltman/centerline-labeling)
+-   **R**
+    -   [midlines](https://github.com/RichardPatterson/midlines) - A
+        more hydrology-oriented library that provides a multi-step
+        approach to generate a smooth centerline of complex curved
+        polygons (like rivers).
+    -   [cmgo](https://github.com/AntoniusGolly/cmgo) - The main aim of
+        the package is to propose a workflow to extract channel bank
+        metrics, and as a part of that workflow, centerline extraction
+        was implemented.
+    -   [raybevel](https://github.com/tylermorganwall/raybevel) -
+        Provides a way to generate **straight** skeletons of polygons.
+        This approach is implemented in the
+        `cnt_skeleton(method = "straight")` function of the current
+        package.
+-   🐍 Python:
+    -   [centerline](https://github.com/fitodic/centerline/tree/master)
+        library
+-   🦀 Rust:
+    -   [centerline_rs](https://codeberg.org/eadf/centerline_rs) library
+-   **JS** Javascript:
+    -   [Centerline labeling
+        blogpost](https://observablehq.com/@veltman/centerline-labeling)
