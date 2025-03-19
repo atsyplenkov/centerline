@@ -1,3 +1,10 @@
+centerline 0.2.3 (2025-03-19)
+=========================
+
+### UPDATES
+
+  * updated the `geomtextpath` version to 0.1.5
+
 centerline 0.2.2 (2025-03-16)
 =========================
 
