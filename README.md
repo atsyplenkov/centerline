@@ -237,7 +237,7 @@ lengths](https://www.lakescientist.com/lake-shape/), for example.
 lake_centerline <- cnt_path_guess(lake, keep = 1)
 ```
 
-You can plot polygon centerlines with the `geom_cnt_*` functions family:
+You can plot polygon centerline with the `geom_cnt_*` functions family:
 
 <details>
 <summary>

@@ -241,7 +241,7 @@ And what if we don't know the starting and ending locations? What if we just wan
 lake_centerline <- cnt_path_guess(lake, keep = 1)
 ```
 
-You can plot polygon centerlines with the `geom_cnt_*` functions family:
+You can plot polygon centerline with the `geom_cnt_*` functions family:
 
 <details>
 <summary>cnt_path_guess() code 👇</summary>
