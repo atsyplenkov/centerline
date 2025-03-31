@@ -24,7 +24,8 @@ requireNamespace("smoothr", quietly = TRUE)
 [![Check CRAN status](https://github.com/atsyplenkov/centerline/actions/workflows/CRAN-checks.yaml/badge.svg)](https://github.com/atsyplenkov/centerline/actions/workflows/CRAN-checks.yaml)
 [![Codecov test coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
 [![CRAN status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
-[![Downloads](https://cranlogs.r-pkg.org/badges/centerline)](https://CRAN.R-project.org/package=centerline)
+[![Monthly downloads](https://cranlogs.r-pkg.org/badges/centerline)](https://CRAN.R-project.org/package=centerline)
+[![Total downloads](http://cranlogs.r-pkg.org/badges/grand-total/centerline)](https://cran.r-project.org/package=centerline)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features from complex polygons, such as roads or rivers, by computing their centerlines (or median-axis) based on skeletons. It uses the super-fast [`geos`](https://paleolimbot.github.io/geos/index.html) library in the background and have bindings for your favorite spatial data library ([`sf`](https://r-spatial.github.io/sf/), [`terra`](https://rspatial.github.io/terra/) and [`geos`](https://paleolimbot.github.io/geos/index.html)).

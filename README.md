@@ -14,7 +14,10 @@ status](https://github.com/atsyplenkov/centerline/actions/workflows/CRAN-checks.
 coverage](https://codecov.io/gh/atsyplenkov/centerline/graph/badge.svg)](https://app.codecov.io/gh/atsyplenkov/centerline)
 [![CRAN
 status](https://www.r-pkg.org/badges/version/centerline)](https://CRAN.R-project.org/package=centerline)
-[![Downloads](https://cranlogs.r-pkg.org/badges/centerline)](https://CRAN.R-project.org/package=centerline)
+[![Monthly
+downloads](https://cranlogs.r-pkg.org/badges/centerline)](https://CRAN.R-project.org/package=centerline)
+[![Total
+downloads](http://cranlogs.r-pkg.org/badges/grand-total/centerline)](https://cran.r-project.org/package=centerline)
 <!-- badges: end -->
 
 The `centerline` R package simplifies the extraction of linear features
@@ -74,7 +77,9 @@ lake_skeleton_d <-
 ```
 
 <details>
+
 <summary>
+
 cnt_skeleton() code 👇
 </summary>
 
@@ -165,7 +170,9 @@ pol_path <-
 ```
 
 <details>
+
 <summary>
+
 cnt_path() code 👇
 </summary>
 
@@ -240,7 +247,9 @@ lake_centerline <- cnt_path_guess(lake, keep = 1)
 You can plot polygon centerline with the `geom_cnt_*` functions family:
 
 <details>
+
 <summary>
+
 cnt_path_guess() code 👇
 </summary>
 
@@ -301,25 +310,24 @@ centerline_plot <-
 
 ## Alternatives
 
--   **R**
-    -   [midlines](https://github.com/RichardPatterson/midlines) - A
-        more hydrology-oriented library that provides a multi-step
-        approach to generate a smooth centerline of complex curved
-        polygons (like rivers).
-    -   [cmgo](https://github.com/AntoniusGolly/cmgo) - The main aim of
-        the package is to propose a workflow to extract channel bank
-        metrics, and as a part of that workflow, centerline extraction
-        was implemented.
-    -   [raybevel](https://github.com/tylermorganwall/raybevel) -
-        Provides a way to generate **straight** skeletons of polygons.
-        This approach is implemented in the
-        `cnt_skeleton(method = "straight")` function of the current
-        package.
--   🐍 Python:
-    -   [centerline](https://github.com/fitodic/centerline/tree/master)
-        library
--   🦀 Rust:
-    -   [centerline_rs](https://codeberg.org/eadf/centerline_rs) library
--   **JS** Javascript:
-    -   [Centerline labeling
-        blogpost](https://observablehq.com/@veltman/centerline-labeling)
+- **R**
+  - [midlines](https://github.com/RichardPatterson/midlines) - A more
+    hydrology-oriented library that provides a multi-step approach to
+    generate a smooth centerline of complex curved polygons (like
+    rivers).
+  - [cmgo](https://github.com/AntoniusGolly/cmgo) - The main aim of the
+    package is to propose a workflow to extract channel bank metrics,
+    and as a part of that workflow, centerline extraction was
+    implemented.
+  - [raybevel](https://github.com/tylermorganwall/raybevel) - Provides a
+    way to generate **straight** skeletons of polygons. This approach is
+    implemented in the `cnt_skeleton(method = "straight")` function of
+    the current package.
+- 🐍 Python:
+  - [centerline](https://github.com/fitodic/centerline/tree/master)
+    library
+- 🦀 Rust:
+  - [centerline_rs](https://codeberg.org/eadf/centerline_rs) library
+- **JS** Javascript:
+  - [Centerline labeling
+    blogpost](https://observablehq.com/@veltman/centerline-labeling)
