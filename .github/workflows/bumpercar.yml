@@ -1,22 +1,17 @@
-name: Update R DESCRIPTION dependencies
+name: Bumpercar Dependency Update
 
 on:
-  schedule:
-    - cron: "0 2 * * 1"  # Every Monday at 2am UTC
-  workflow_dispatch:
+  push:
+    branches: [main]
 
 permissions:
   contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
-  bumpercar:
+  update-dependencies:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run bumpercar
-        uses: jahnen/bumpercar@v1.0.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
+      - uses: jahnen/bumpercar@v1.0.0
