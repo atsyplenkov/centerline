@@ -5,6 +5,10 @@ on:
     - cron: "0 2 * * 1"  # Every Monday at 2am UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   bumpercar:
     runs-on: ubuntu-latest
