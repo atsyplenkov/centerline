@@ -1,0 +1,15 @@
+^LICENSE\.md$
+^\.github$
+^\.git$
+^issues$
+^cran-comments\.md$
+^README\.Rmd$
+^README\.html$
+^CRAN-SUBMISSION$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^doc$
+^Meta$
+^vignettes/articles$
+^revdep$

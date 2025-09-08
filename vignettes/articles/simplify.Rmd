@@ -1,0 +1,380 @@
+---
+title: "To simplify or to densify polygons"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{To simplify or to densify polygons}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{mapgl, bench, htmlwidgets, rmapshaper}
+---
+
+```{r knitr_setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warn = FALSE,
+  message = FALSE
+)
+
+requireNamespace("mapgl", quietly = TRUE)
+requireNamespace("bench", quietly = TRUE)
+requireNamespace("htmlwidgets", quietly = TRUE)
+requireNamespace("rmapshaper", quietly = TRUE)
+
+library(mapgl)
+```
+
+# Lake Ōhau example
+
+In this vignette, based on the example of Lake Ōhau, the `keep` parameter in `cnt_skeleton()` and `cnt_path_guess()` is demystified. Simply put, it is responsible for the simplification/densification of the input polygon. That is, when `keep < 1`, geometry simplification is performed (using the `geos::geos_simplify()` function). Meanwhile, when `keep > 1`, the densification algorithm is used (through `geos::geos_densify()`).
+
+```{r load_layers}
+library(centerline)
+
+lake <-
+  sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "lake",
+    quiet = TRUE
+  )
+```
+
+```{r viz_layers, include=FALSE}
+lake_c <-
+  lake |>
+  sf::st_centroid() |>
+  sf::st_transform(4326) |>
+  wk::wk_coords()
+
+lake_border <-
+  lake |>
+  geos::as_geos_geometry() |>
+  geos::geos_boundary() |>
+  sf::st_as_sf() |>
+  sf::st_transform(4326)
+```
+
+The influence of `keep` is best observed in the example of generating the skeleton of a polygon. Since simplification reduces the number of nodes in the polygon, while densification, on the contrary, increases it. Therefore, generating skeletons using the Voronoi method will produce more lines as the `keep` parameter increases.
+
+```{r skeletons}
+skeleton_original <-
+  lake |>
+  cnt_skeleton(keep = 1)
+
+skeleton_simplified <-
+  lake |>
+  cnt_skeleton(keep = 0.25)
+
+skeleton_densified <-
+  lake |>
+  cnt_skeleton(keep = 1.5)
+
+```
+
+```{r gl_skeletons, include = FALSE}
+center <- c(lake_c$x, lake_c$y)
+zoom <- 10.5
+
+gl_skeleton_simplified <-
+  maplibre(
+    center = center,
+    zoom = zoom,
+    style = carto_style("positron")
+  ) |>
+  add_line_layer(
+    id = "skeleton_original",
+    source = skeleton_original,
+    line_color = "#100516",
+    line_width = 0.5
+  ) |>
+  add_line_layer(
+    id = "skeleton_simplified",
+    source = skeleton_simplified,
+    line_color = "#a73378",
+    line_width = 2
+  )
+
+gl_skeleton_densified <-
+  maplibre(
+    center = center,
+    zoom = zoom,
+    style = carto_style("positron")
+  ) |>
+  add_line_layer(
+    id = "skeleton_original",
+    source = skeleton_original,
+    line_color = "#100516",
+    line_width = 0.5
+  ) |>
+  add_line_layer(
+    id = "skeleton_densified",
+    source = skeleton_densified,
+    line_color = "#f4876e",
+    line_width = 2
+  ) |>
+  add_categorical_legend(
+    legend_title = "Type",
+    values = c("Original", "Simplified", "Densified"),
+    colors = c("#100516", "#a73378", "#f4876e"),
+    circular_patches = TRUE,
+    position = "top-right"
+  )
+
+simplify_skeleton_compare <- compare(gl_skeleton_simplified, gl_skeleton_densified)
+htmlwidgets::saveWidget(simplify_skeleton_compare, "./simplify_skeleton_compare.html")
+```
+
+<figure>
+<iframe src="./simplify_skeleton_compare.html" width="100%" height="350px"></iframe>
+<figcaption style="font-size: 0.8em; color: black">Comparison between <span style="background-color: #100516; color: white">original</span>, <span style="background-color: #a73378; color: white">simplified</span>, and <span style="background-color: #f4876e; color: white">densified</span> skeletons of the Lake Ōhau generated using Voronoi diagrams. Zoom to the borders to see the differences.</figcaption> 
+</figure>
+
+On the other hand, the difference in centerline results is negligible. Indeed, the simplified centerline is less dense than the original, while the densified one is almost identical to the original. Additionally, the simplified one ends in a slightly different location compared to the others.
+
+```{r centerline_search}
+cnt_original <-
+  lake |>
+  cnt_path_guess(keep = 1)
+
+cnt_simplified <-
+  lake |>
+  cnt_path_guess(keep = 0.25)
+
+cnt_densified <-
+  lake |>
+  cnt_path_guess(keep = 1.5)
+
+```
+
+```{r simplify_vs_densify, include = FALSE}
+center <- c(lake_c$x, lake_c$y)
+zoom <- 10.5
+
+gl_simplified <-
+  maplibre(
+    center = center,
+    zoom = zoom,
+    style = carto_style("positron")
+  ) |>
+  add_line_layer(
+    id = "lake_border",
+    source = lake_border,
+    line_color = "#100516",
+    line_width = 0.5
+  ) |>
+  add_line_layer(
+    id = "cnt_original",
+    source = cnt_original,
+    line_color = "#100516",
+    line_width = 1
+  ) |>
+  add_line_layer(
+    id = "cnt_simplified",
+    source = cnt_simplified,
+    line_color = "#a73378",
+    line_width = 2
+  )
+
+gl_densified <-
+  maplibre(
+    center = center,
+    zoom = zoom,
+    style = carto_style("positron")
+  ) |>
+  add_line_layer(
+    id = "lake_border",
+    source = lake_border,
+    line_color = "#100516",
+    line_width = 0.5
+  ) |>
+  add_line_layer(
+    id = "cnt_original",
+    source = cnt_original,
+    line_color = "#100516",
+    line_width = 1
+  ) |>
+  add_line_layer(
+    id = "cnt_densified",
+    source = cnt_densified,
+    line_color = "#f4876e",
+    line_width = 2
+  ) |>
+  add_categorical_legend(
+    legend_title = "Type",
+    values = c("Original", "Simplified", "Densified"),
+    colors = c("#100516", "#a73378", "#f4876e"),
+    circular_patches = TRUE,
+    position = "top-right"
+  )
+
+simplify_densify_compare <- compare(gl_simplified, gl_densified)
+htmlwidgets::saveWidget(simplify_densify_compare, "./simplify_densify_compare.html")
+```
+
+<figure>
+<iframe src="./simplify_densify_compare.html" width="100%" height="350px"></iframe>
+<figcaption style="font-size: 0.8em; color: black">Comparison between <span style="background-color: #100516; color: white">original</span>, <span style="background-color: #a73378; color: white">simplified</span>, and <span style="background-color: #f4876e; color: white">densified</span> centerlines of the Lake Ōhau</figcaption> 
+</figure>
+
+However, when it comes to speed comparison, the simplification significantly helps to reduce the computation time. It is approximately 3-4 times faster than the estimation based on the original geometry.
+
+Overall, I would say that it all depends on the goals of your calculations. If you are interested in quickly labelling the polygon along the center, it is better to use `cnt_path_guess()` with `keep ≈ 0.5` to preserve the overall outline of the centerline while significantly speeding up the calculation process. However, if the goal is to measure the length of the polygon, then `cnt_path_guess()` with `keep >= 1` may turn out to be the best option.
+
+```{r bench_simplify_densify, eval = TRUE}
+bench::mark(
+  original = cnt_path_guess(lake, keep = 1),
+  simplified = cnt_path_guess(lake, keep = 0.25),
+  densified = cnt_path_guess(lake, keep = 1.5),
+  relative = TRUE,
+  check = FALSE,
+  iterations = 5L
+)
+```
+
+# Why not use %packagename% for simplification?
+
+That's a good question. Initially, the `centerline` package was developed with `rmapshaper::ms_simplify()` under the hood by default. I really like the `mapshaper` JavaScript library and its bindings to R because it can preserve topology and keep the overall shape (see the `rmapshaper` [vignette](https://andyteucher.ca/rmapshaper/articles/rmapshaper.html)) while dealing with extremely large geometries. However, it is not as fast as you might imagine, creates an additional package dependency, and there are problems with installation on Linux machines and CRAN checks. So we decided to ditch it.
+
+Instead, we created a `geos`-based function (`centerline:::geos_ms_simplify()`) to mimic the `rmapshaper::ms_simplify()` behavior. It is not yet accessible via export, as it is an internal function used only in `cnt_skeleton()`. It performs approximately 60 times faster (see benchmarks) and produces similar (but not identical) outputs.
+
+```{r comparison_helpers, include = FALSE}
+library(rmapshaper)
+
+lake_geos <-
+  lake |>
+  geos::as_geos_geometry() |>
+  centerline:::geos_ms_simplify(keep = 0.5) |>
+  sf::st_as_sf() |>
+  sf::st_transform(4326)
+
+lake_mapshaper <-
+  rmapshaper::ms_simplify(lake, keep = 0.5) |>
+  sf::st_transform(4326)
+```
+
+```{r mapshaper_benchmark, eval = TRUE}
+bench::mark(
+  rmapshaper = rmapshaper::ms_simplify(lake, keep = 0.5),
+  centerline = centerline:::geos_ms_simplify(lake_geos, keep = 0.5),
+  check = FALSE,
+  relative = TRUE,
+  iterations = 5L
+)
+```
+
+```{r rmapshaper_geos_compare, include = FALSE}
+geos_lake <-
+  maplibre(
+    center = c(169.847112, -44.178850),
+    zoom = 12.5,
+    style = carto_style("positron")
+  ) |>
+  add_fill_layer(
+    id = "lake_geos",
+    source = lake_geos,
+    fill_color = "#005f73",
+    fill_opacity = 0.7
+  )
+
+mapshaper_lake <-
+  maplibre(
+    center = c(169.847112, -44.178850),
+    zoom = 12.5,
+    style = carto_style("positron")
+  ) |>
+  add_fill_layer(
+    id = "lake_mapshaper",
+    source = lake_mapshaper,
+    fill_color = "#bb3e03",
+    fill_opacity = 0.7
+  ) |>
+  add_categorical_legend(
+    legend_title = "Algorithm",
+    values = c("{rmapshaper}", "{centerline}"),
+    colors = c("#c36d44", "#408492"),
+    circular_patches = TRUE,
+    position = "top-right"
+  )
+
+rmapshaper_geos_compare <- compare(mapshaper_lake, geos_lake)
+htmlwidgets::saveWidget(rmapshaper_geos_compare, "./rmapshaper_geos_compare.html")
+```
+
+<figure>
+<iframe src="./rmapshaper_geos_compare.html" width="100%" height="350px"></iframe>
+<figcaption style="font-size: 0.8em; color: black">Comparison between <span style="background-color: #c36d44; color: white">{rmapshaper}</span>, and <span style="background-color: #408492; color: white">{centerline}</span> simplification algorithms on the lake polygon of the Lake Ōhau.</figcaption>
+</figure>
+
+However, if you still think that the built-in simplification is mediocre, or if it produces an error, consider generating centerlines/skeletons as follows:
+
+```{r rmapshaper_example}
+lake_ms_centerline <-
+  lake |>
+  rmapshaper::ms_simplify(keep = 0.5) |>
+  cnt_path_guess(keep = 1) # Mind the 'keep' parameter
+
+lake_centerline <-
+  lake |>
+  cnt_path_guess(keep = 0.5)
+```
+
+
+```{r rmapshaer_vs_centerline, include = FALSE}
+center <- c(lake_c$x, lake_c$y)
+zoom <- 10.5
+
+gl_ms_centerline <-
+  maplibre(
+    center = center,
+    zoom = zoom,
+    style = carto_style("positron")
+  ) |>
+  add_line_layer(
+    id = "lake_border",
+    source = lake_border,
+    line_color = "#100516",
+    line_width = 0.5
+  ) |>
+  add_line_layer(
+    id = "cnt_simplified",
+    source = lake_ms_centerline,
+    line_color = "#a73378",
+    line_width = 2
+  )
+
+gl_centerline <-
+  maplibre(
+    center = center,
+    zoom = zoom,
+    style = carto_style("positron")
+  ) |>
+  add_line_layer(
+    id = "lake_border",
+    source = lake_border,
+    line_color = "#100516",
+    line_width = 0.5
+  ) |>
+  add_line_layer(
+    id = "lake_centerline",
+    source = lake_centerline,
+    line_color = "#f4876e",
+    line_width = 2
+  ) |>
+  add_categorical_legend(
+    legend_title = "Package",
+    values = c("{rmapshaper}", "{centerline}"),
+    colors = c("#a73378", "#f4876e"),
+    circular_patches = TRUE,
+    position = "top-right"
+  )
+
+simplify_rmapshaper_compare <- compare(gl_ms_centerline, gl_centerline)
+htmlwidgets::saveWidget(simplify_rmapshaper_compare, "./simplify_rmapshaper_compare.html")
+```
+
+<figure>
+<iframe src="./simplify_rmapshaper_compare.html" width="100%" height="350px"></iframe>
+<figcaption style="font-size: 0.8em; color: black">Comparison between <span style="background-color: #a73378; color: white">{rmapshaper}</span>, and <span style="background-color: #f4876e; color: white">{centerline}</span> simplification algorithms on the centerlines of the Lake Ōhau.</figcaption> 
+</figure>
