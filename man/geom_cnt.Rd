@@ -19,6 +19,27 @@ geom_cnt(
 )
 }
 \arguments{
+\item{mapping}{Set of aesthetic mappings created by \code{\link[ggplot2:aes]{ggplot2::aes()}}. See
+\code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}} for details.}
+
+\item{data}{The data to be displayed in this layer. See \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}}
+for details.}
+
+\item{stat}{The statistical transformation to use on the data for this layer.
+See \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}} for details.}
+
+\item{position}{A position adjustment to use on the data for this layer.
+See \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}} for details.}
+
+\item{na.rm}{If \code{FALSE}, the default, missing values are removed with
+a warning. If \code{TRUE}, missing values are silently removed.}
+
+\item{show.legend}{logical. Should this layer be included in the legends?
+See \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}} for details.}
+
+\item{inherit.aes}{If \code{FALSE}, overrides the default aesthetics,
+rather than combining with them. See \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}} for details.}
+
 \item{keep}{numeric, proportion of points to retain (0.05-5.0; default 0.5).
 See Details.}
 
@@ -28,6 +49,9 @@ See Details.}
 
 \item{simplify}{logical, if \code{TRUE} (default) then the
 centerline will be smoothed with \code{\link[smoothr:smooth_ksmooth]{smoothr::smooth_ksmooth()}}}
+
+\item{...}{Other arguments passed on to \code{\link[ggplot2:layer]{ggplot2::layer()}}. See
+\code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}} for details.}
 }
 \value{
 A \code{Layer} ggproto object that can be added to a plot.
