@@ -13,3 +13,4 @@
 ^Meta$
 ^vignettes/articles$
 ^revdep$
+^dev.R$
