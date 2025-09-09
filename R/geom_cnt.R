@@ -7,7 +7,6 @@
 #' centerline will be smoothed with [smoothr::smooth_ksmooth()]
 #'
 #' @inheritParams cnt_skeleton
-#' @inheritParams ggplot2::geom_sf
 #'
 #' @inheritSection ggplot2::geom_sf CRS
 #' @inheritSection ggplot2::geom_sf Combining sf layers and regular geoms
