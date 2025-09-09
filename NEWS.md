@@ -1,3 +1,10 @@
+# centerline 0.2.4 (2025-09-09)
+=========================
+
+### UPDATES
+
+  * compatibility with ggplot2 4.0.0
+
 centerline 0.2.3 (2025-03-19)
 =========================
 
