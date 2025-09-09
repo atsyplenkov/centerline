@@ -12,3 +12,5 @@ docs
 /doc/
 /Meta/
 /revdep/
+cran-comments.md
+dev.R

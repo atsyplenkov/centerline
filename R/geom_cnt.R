@@ -1,13 +1,40 @@
+# TODO:
+# Update documentation to use ggplot2::geom_sf() instead of ggplot2::layer()
+# as soon as ggplot2 4.0.0 is released
+
 #' Plot centerline with ggplot2
 #'
 #' @description Binding for [ggplot2::geom_sf()], therefore it supports
 #' only `sf` objects.
 #'
+#' @param mapping Set of aesthetic mappings created by [ggplot2::aes()]. See
+#' [ggplot2::geom_sf()] for details.
+#'
+#' @param data The data to be displayed in this layer. See [ggplot2::geom_sf()]
+#' for details.
+#'
+#' @param stat The statistical transformation to use on the data for this layer.
+#' See [ggplot2::geom_sf()] for details.
+#'
+#' @param position A position adjustment to use on the data for this layer.
+#' See [ggplot2::geom_sf()] for details.
+#'
+#' @param na.rm If \code{FALSE}, the default, missing values are removed with
+#' a warning. If \code{TRUE}, missing values are silently removed.
+#'
+#' @param show.legend logical. Should this layer be included in the legends?
+#' See [ggplot2::geom_sf()] for details.
+#'
+#' @param inherit.aes If \code{FALSE}, overrides the default aesthetics,
+#' rather than combining with them. See [ggplot2::geom_sf()] for details.
+#'
 #' @param simplify logical, if \code{TRUE} (default) then the
 #' centerline will be smoothed with [smoothr::smooth_ksmooth()]
 #'
+#' @param ... Other arguments passed on to [ggplot2::layer()]. See
+#' [ggplot2::geom_sf()] for details.
+#'
 #' @inheritParams cnt_skeleton
-#' @inheritParams ggplot2::geom_sf
 #'
 #' @inheritSection ggplot2::geom_sf CRS
 #' @inheritSection ggplot2::geom_sf Combining sf layers and regular geoms

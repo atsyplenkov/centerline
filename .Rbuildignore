@@ -13,3 +13,6 @@
 ^Meta$
 ^vignettes/articles$
 ^revdep$
+^dev.R$
+^codemeta\.json$
+^Rplot\.pdf$
