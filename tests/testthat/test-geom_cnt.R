@@ -16,6 +16,8 @@ test_that("The geom_cnt_*() creates ggproto objects", {
   skip_if_not_installed("geomtextpath")
   skip_if_not_installed("ggplot2")
 
+  skip_if_not(packageVersion("ggplot2") > "3.5.2")
+
   ln <- geom_cnt(data = lake)
   txt <- geom_cnt_text(data = lake, label = "label")
   lbl <- geom_cnt_label(data = lake, label = "label")
@@ -31,6 +33,8 @@ test_that("The geom_cnt_*() creates ggproto objects", {
 test_that("geom_cnt_*() create correct types", {
   skip_if_not_installed("geomtextpath")
   skip_if_not_installed("ggplot2")
+
+  skip_if_not(packageVersion("ggplot2") > "3.5.2")
 
   ln <-
     ggplot2::ggplot(lake) +
@@ -62,6 +66,8 @@ test_that("geom_cnt_*() smiplification works", {
   skip_if_not_installed("ggplot2")
   skip_if_not_installed("smoothr")
 
+  skip_if_not(packageVersion("ggplot2") > "3.5.2")
+
   ln <-
     ggplot2::ggplot(lake) +
     geom_cnt(data = lake, simplify = TRUE)
@@ -91,6 +97,8 @@ test_that("geom_cnt_*() smiplification works with mutiple geometries", {
   skip_if_not_installed("geomtextpath")
   skip_if_not_installed("ggplot2")
   skip_if_not_installed("smoothr")
+
+  skip_if_not(packageVersion("ggplot2") > "3.5.2")
 
   ln <-
     ggplot2::ggplot(shapes) +
