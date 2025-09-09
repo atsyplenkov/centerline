@@ -46,9 +46,12 @@ test_that("geom_cnt_*() create correct types", {
     ggplot2::ggplot(lake) +
     geom_cnt_label(data = lake, label = "label")
 
+  # Suppress plot output during testing
+  pdf(file = NULL)
   ln_grobs <- ggplot2::layer_grob(ln)[[1]]
   txt_grobs <- ggplot2::layer_grob(txt)[[1]]
   lbl_grobs <- ggplot2::layer_grob(lbl)[[1]]
+  dev.off()
 
   expect_s3_class(ln$layers[[1]], "LayerSf")
   expect_s3_class(txt$layers[[1]], "LayerSf")
@@ -78,9 +81,12 @@ test_that("geom_cnt_*() smiplification works", {
     ggplot2::ggplot(lake) +
     geom_cnt_label(data = lake, label = "label", simplify = TRUE)
 
+  # Suppress plot output during testing
+  pdf(file = NULL)
   ln_grobs <- ggplot2::layer_grob(ln)[[1]]
   txt_grobs <- ggplot2::layer_grob(txt)[[1]]
   lbl_grobs <- ggplot2::layer_grob(lbl)[[1]]
+  dev.off()
 
   expect_s3_class(ln$layers[[1]], "LayerSf")
   expect_s3_class(txt$layers[[1]], "LayerSf")
@@ -110,9 +116,12 @@ test_that("geom_cnt_*() smiplification works with mutiple geometries", {
     ggplot2::ggplot(shapes) +
     geom_cnt_label(data = shapes, label = "label", simplify = TRUE)
 
+  # Suppress plot output during testing
+  pdf(file = NULL)
   ln_grobs <- ggplot2::layer_grob(ln)[[1]]
   txt_grobs <- ggplot2::layer_grob(txt)[[1]]
   lbl_grobs <- ggplot2::layer_grob(lbl)[[1]]
+  dev.off()
 
   expect_s3_class(ln$layers[[1]], "LayerSf")
   expect_s3_class(txt$layers[[1]], "LayerSf")
