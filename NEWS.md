@@ -1,3 +1,10 @@
+centerline 0.2.5 (2025-03-12)
+=========================
+
+### UPDATES
+
+  * Fix CRAN Check fails on Win Old rel
+
 centerline 0.2.4 (2025-09-09)
 =========================
 

@@ -4,17 +4,17 @@
   "identifier": "centerline",
   "description": "Generates skeletons of closed 2D polygons using Voronoi diagrams. It provides methods for 'sf', 'terra', and 'geos' objects to compute polygon centerlines based on the generated skeletons. Voronoi, G. (1908) <doi:10.1515/crll.1908.134.198>.",
   "name": "centerline: Extract Centerline from Closed Polygons",
-  "relatedLink": "https://centerline.anatolii.nz",
+  "relatedLink": ["https://centerline.anatolii.nz", "https://CRAN.R-project.org/package=centerline"],
   "codeRepository": "https://github.com/atsyplenkov/centerline",
   "issueTracker": "https://github.com/atsyplenkov/centerline/issues",
   "license": "https://spdx.org/licenses/MIT",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "programmingLanguage": {
     "@type": "ComputerLanguage",
     "name": "R",
     "url": "https://r-project.org"
   },
-  "runtimePlatform": "R version 4.5.1 Patched (2025-06-20 r88332 ucrt)",
+  "runtimePlatform": "R version 4.5.1 Patched (2025-08-11 r88661)",
   "provider": {
     "@id": "https://cran.r-project.org",
     "@type": "Organization",
@@ -214,5 +214,9 @@
     },
     "SystemRequirements": null
   },
-  "fileSize": "2954.932KB"
+  "fileSize": "2947.004KB",
+  "releaseNotes": "https://github.com/atsyplenkov/centerline/blob/main/NEWS.md",
+  "readme": "https://github.com/atsyplenkov/centerline/blob/master/README.md",
+  "contIntegration": ["https://github.com/atsyplenkov/centerline/actions/workflows/R-CMD-check.yaml", "https://github.com/atsyplenkov/centerline/actions/workflows/CRAN-checks.yaml", "https://app.codecov.io/gh/atsyplenkov/centerline"],
+  "developmentStatus": "https://www.repostatus.org/#active"
 }

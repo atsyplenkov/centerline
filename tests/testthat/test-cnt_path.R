@@ -46,8 +46,14 @@ test_that(
     # Class, CRS and attributes are inherited
     expect_true(inherits(result, c("SpatVector")))
     expect_true(inherits(result_one, c("SpatVector")))
-    expect_equal(terra::crs(result), terra::crs(polygon))
-    expect_equal(terra::crs(result_one), terra::crs(polygon))
+    expect_equal(
+      gsub("_", " ", terra::crs(result)),
+      gsub("_", " ", terra::crs(polygon))
+    )
+    expect_equal(
+      gsub("_", " ", terra::crs(result_one)),
+      gsub("_", " ", terra::crs(polygon))
+    )
     expect_equal(as.data.frame(result), as.data.frame(start_point))
     expect_equal(as.data.frame(result_one), as.data.frame(start_point[1, ]))
 
