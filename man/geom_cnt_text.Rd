@@ -168,7 +168,7 @@ understands:
 }
 }
 \examples{
-\dontshow{if (requireNamespace("geomtextpath", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("geomtextpath", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 library(sf)
 library(ggplot2)
 
