@@ -101,6 +101,7 @@ in projected coordinates.
 
 \examples{
 \dontshow{if (requireNamespace("geomtextpath", quietly = TRUE)) withAutoprint(\{ # examplesIf}
+\donttest{
 library(sf)
 library(ggplot2)
 
@@ -119,6 +120,7 @@ ggplot() +
     simplify = TRUE
   ) +
   theme_void()
+}
 \dontshow{\}) # examplesIf}
 }
 \seealso{

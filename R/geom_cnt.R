@@ -46,6 +46,7 @@
 #' @export
 #'
 #' @examplesIf requireNamespace("geomtextpath", quietly = TRUE)
+#' \donttest{
 #' library(sf)
 #' library(ggplot2)
 #'
@@ -64,6 +65,7 @@
 #'     simplify = TRUE
 #'   ) +
 #'   theme_void()
+#' }
 geom_cnt <-
   function(
     mapping = ggplot2::aes(),
@@ -168,6 +170,7 @@ geom_cnt <-
 #' @export
 #'
 #' @examplesIf requireNamespace("geomtextpath", quietly = TRUE)
+#' \donttest{
 #' library(sf)
 #' library(ggplot2)
 #'
@@ -201,6 +204,7 @@ geom_cnt <-
 #'     simplify = TRUE
 #'   ) +
 #' theme_void()
+#' }
 #'
 geom_cnt_text <-
   function(
