@@ -285,13 +285,7 @@ cnt_path_guess_master <-
       )
 
     # Paths lengths in counts
-    paths_length <-
-      base::vapply(
-        paths$edge_paths,
-        length,
-        FUN.VALUE = integer(1),
-        USE.NAMES = FALSE
-      )
+    paths_length <- lengths(paths$edge_paths)
 
     # Filter non-zero paths
     paths_length_flag <- paths_length > 1

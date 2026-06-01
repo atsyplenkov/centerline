@@ -162,7 +162,7 @@ test_that(
       })
 
     # Check that all paths are not NA
-    expect_true(all(!is.na(test_list)))
+    expect_true(!anyNA(test_list))
   }
 )
 
@@ -322,8 +322,8 @@ test_that(
       )
 
     # Check that all paths are not NA
-    expect_true(all(!is.na(list_no_hole)))
-    expect_true(all(!is.na(list_w_hole)))
+    expect_true(!anyNA(list_no_hole))
+    expect_true(!anyNA(list_w_hole))
 
     # Check that first length is smaller than the median and last is larger
     expect_true(lengths_no_hole[1] < median(lengths_no_hole))

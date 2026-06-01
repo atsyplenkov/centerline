@@ -116,8 +116,8 @@ test_that(
       )
 
     ## Check that all paths are not NA nor NULL nor zero
-    expect_true(all(!is.na(keep_list)))
-    expect_true(all(!is.null(keep_lengths)))
+    expect_true(!anyNA(keep_list))
+    expect_true(!any(is.null(keep_lengths)))
     expect_true(all(keep_lengths > 0))
     expect_vector(keep_lengths, ptype = double(), size = 10)
     expect_gt(length(unique(keep_lengths)), 1)
@@ -228,8 +228,8 @@ test_that(
       )
 
     ## Check that all paths are not NA nor NULL nor zero
-    expect_true(all(!is.na(keep_list)))
-    expect_true(all(!is.null(keep_lengths)))
+    expect_true(!anyNA(keep_list))
+    expect_true(!any(is.null(keep_lengths)))
     expect_true(all(keep_lengths > 0))
     expect_vector(keep_lengths, ptype = double(), size = 10)
     expect_gt(length(unique(keep_lengths)), 1)
@@ -326,8 +326,8 @@ test_that(
       )
 
     ## Check that all paths are not NA nor NULL nor zero
-    expect_true(all(!is.na(keep_list)))
-    expect_true(all(!is.null(keep_lengths)))
+    expect_true(!anyNA(keep_list))
+    expect_true(!any(is.null(keep_lengths)))
     expect_true(all(keep_lengths > 0))
     expect_vector(keep_lengths, ptype = double(), size = 10)
     expect_gt(length(unique(keep_lengths)), 1)
@@ -433,8 +433,8 @@ test_that(
       )
 
     ## Check that all paths are not NA nor NULL nor zero
-    expect_true(all(!is.na(keep_list)))
-    expect_true(all(!is.null(keep_lengths)))
+    expect_true(!anyNA(keep_list))
+    expect_true(!any(is.null(keep_lengths)))
     expect_true(all(keep_lengths > 0))
     expect_vector(keep_lengths, ptype = double(), size = 10)
     expect_gt(length(unique(keep_lengths)), 1)
