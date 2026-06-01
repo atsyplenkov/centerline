@@ -513,3 +513,18 @@ test_that(
     )
   }
 )
+
+# Issue 22
+test_that("cnt_path_guess works with geometry-only SpatVector", {
+  skip_if_not_installed("terra")
+
+  f <- system.file("extdata/example.gpkg", package = "centerline")
+  v <- terra::vect(f, layer = "lake", what = "geom")
+
+  result <- cnt_path_guess(v)
+
+  expect_s4_class(result, "SpatVector")
+  expect_contains(get_geom_type(result), "lines")
+  expect_equal(terra::crs(result), terra::crs(v))
+  expect_equal(nrow(result), nrow(v))
+})

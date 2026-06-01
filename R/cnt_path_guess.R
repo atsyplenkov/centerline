@@ -215,7 +215,7 @@ cnt_path_guess.SpatVector <-
       longest_path_geos <- geos_to_terra(longest_path_geos)
 
       if (nrow(input_data) == 0) {
-        return(geos_to_terra(longest_path_geos))
+        return(longest_path_geos)
       } else if (nrow(input_data) == nrow(longest_path_geos)) {
         longest_path_geos <-
           longest_path_geos |>
