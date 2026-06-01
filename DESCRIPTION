@@ -1,17 +1,19 @@
 Package: centerline
 Title: Extract Centerline from Closed Polygons
-Version: 0.2.5
+Version: 0.2.5.9001
 Authors@R:
     c(
-      person(given = "Anatoly",
-             family = "Tsyplenkov",
-             role = c("aut", "cre", "cph"),
-             email = "atsyplenkov@fastmail.com",
-             comment = c(ORCID = "0000-0003-4144-8402"))
+      person(
+        given = "Anatoly",
+        family = "Tsyplenkov",
+        role = c("aut", "cre", "cph"),
+        email = "atsyplenkov@fastmail.com",
+        comment = c(ORCID = "0000-0003-4144-8402")
+        )
     )
 Maintainer: Anatoly Tsyplenkov <atsyplenkov@fastmail.com>
-Description: Generates skeletons of closed 2D polygons using Voronoi diagrams. 
-            It provides methods for 'sf', 'terra', and 'geos' objects to 
+Description: Generates skeletons of closed 2D polygons using Voronoi diagrams.
+            It provides methods for 'sf', 'terra', and 'geos' objects to
             compute polygon centerlines based on the generated skeletons.
             Voronoi, G. (1908) <doi:10.1515/crll.1908.134.198>.
 License: MIT + file LICENSE
@@ -37,8 +39,8 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Language: en-US
-Config/Needs/website: 
-    mapgl, 
+Config/Needs/website:
+    mapgl,
     rmapshaper,
     bench,
     htmlwidgets
