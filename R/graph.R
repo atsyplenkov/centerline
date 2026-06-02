@@ -3,7 +3,7 @@
 
 #' Build an undirected edge-weighted graph from geos linestrings
 #'
-#' Endpoints are deduplicated using exact geometry equality.
+#' Endpoints are deduplicated using coordinate hashing (tolerance ~1e-10).
 #' @noRd
 build_graph_geos <- function(lines) {
   starts <- geos::geos_point_start(lines)
@@ -11,23 +11,17 @@ build_graph_geos <- function(lines) {
   all_points <- c(starts, ends)
   n_edges <- length(lines)
 
-  # Find unique nodes via exact geometry equality
-  eq_mat <- geos::geos_equals_matrix(all_points, all_points)
-
-  node_ids <- integer(length(all_points))
-  current_id <- 1L
-  visited <- logical(length(all_points))
-
-  for (i in seq_along(all_points)) {
-    if (!visited[i]) {
-      group <- eq_mat[[i]]
-      node_ids[group] <- current_id
-      visited[group] <- TRUE
-      current_id <- current_id + 1L
-    }
-  }
-
-  n_nodes <- current_id - 1L
+  # Deduplicate nodes via rounded coordinates.
+  # Exact geos_equals can fail for shared Voronoi vertices due to tiny
+  # floating-point differences introduced during intersection/clipping.
+  coords <- wk::wk_coords(all_points)
+  rounded <- paste(
+    format(round(coords$x, 10), scientific = FALSE, trim = TRUE),
+    format(round(coords$y, 10), scientific = FALSE, trim = TRUE),
+    sep = ","
+  )
+  node_ids <- match(rounded, unique(rounded))
+  n_nodes <- max(node_ids)
 
   from <- node_ids[seq_len(n_edges)]
   to   <- node_ids[seq_len(n_edges) + n_edges]
