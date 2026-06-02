@@ -238,7 +238,7 @@ cnt_path_guess.SpatVector <-
 
 cnt_path_guess_master <-
   function(skeleton_geos) {
-    if (geos::geos_type(skeleton_geos) == "multilinestring") {
+    if (any(geos::geos_type(skeleton_geos) == "multilinestring")) {
       skeleton_geos <-
         geos::geos_unnest(skeleton_geos, keep_multi = FALSE)
     }
@@ -273,7 +273,7 @@ cnt_path_guess_master <-
     all_dist <- dijkstra(graph, from = closest_end_points)
 
     other_dists <- all_dist$dist[other_nodes]
-    valid <- is.finite(other_dists)
+    valid <- is.finite(other_dists) & other_dists > 0
 
     if (!any(valid)) {
       return(
@@ -283,7 +283,23 @@ cnt_path_guess_master <-
       )
     }
 
-    target_node <- other_nodes[which.max(other_dists)]
+    # Filter to paths with > 1 edge (matching old sfnetworks behaviour)
+    # and pick the longest among them
+    candidate_nodes <- other_nodes[valid]
+    candidate_dists <- other_dists[valid]
+
+    # Count edges in each path by reconstructing it
+    edge_counts <- vapply(candidate_nodes, function(t) {
+      p <- dijkstra(graph, from = closest_end_points, to = t)
+      if (is.null(p)) 0L else length(p$edges)
+    }, FUN.VALUE = integer(1))
+
+    long_enough <- edge_counts > 1L
+    if (!any(long_enough)) {
+      long_enough <- edge_counts > 0L
+    }
+
+    target_node <- candidate_nodes[long_enough][which.max(candidate_dists[long_enough])]
 
     # Reconstruct shortest path to the farthest outer node
     path <- dijkstra(graph, from = closest_end_points, to = target_node)
@@ -300,6 +316,14 @@ cnt_path_guess_master <-
       graph$geometry[path$edges] |>
       geos::geos_make_collection() |>
       geos::geos_line_merge()
+
+    # If line_merge couldn't produce a single linestring (e.g. tiny coord
+    # gaps), keep the longest component
+    if (geos::geos_type(longest_path_geos) == "multilinestring") {
+      pieces <- geos::geos_unnest(longest_path_geos, keep_multi = FALSE)
+      lens <- geos::geos_length(pieces)
+      longest_path_geos <- pieces[which.max(lens)]
+    }
 
     longest_path_geos
   }

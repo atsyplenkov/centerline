@@ -6,21 +6,37 @@
 #' Endpoints are deduplicated using coordinate hashing (tolerance ~1e-10).
 #' @noRd
 build_graph_geos <- function(lines) {
-  starts <- geos::geos_point_start(lines)
-  ends   <- geos::geos_point_end(lines)
-  all_points <- c(starts, ends)
+  # Keep only linestrings
+  is_line <- geos::geos_type(lines) == "linestring"
+  if (!all(is_line)) {
+    lines <- lines[is_line]
+  }
   n_edges <- length(lines)
+  if (n_edges == 0) {
+    stop("No linestring edges in skeleton.")
+  }
 
-  # Deduplicate nodes via rounded coordinates.
-  # Exact geos_equals can fail for shared Voronoi vertices due to tiny
-  # floating-point differences introduced during intersection/clipping.
-  coords <- wk::wk_coords(all_points)
-  rounded <- paste(
-    format(round(coords$x, 10), scientific = FALSE, trim = TRUE),
-    format(round(coords$y, 10), scientific = FALSE, trim = TRUE),
+  # Extract start/end coordinates directly from the linestrings.
+  # This avoids any precision drift from geos_point_start / geos_point_end.
+  coords <- wk::wk_coords(lines)
+
+  # First coordinate of each linestring = start, last = end
+  first_rows <- !duplicated(coords$feature_id)
+  last_rows  <- !duplicated(coords$feature_id, fromLast = TRUE)
+
+  start_key <- paste(
+    format(round(coords$x[first_rows], 10), scientific = FALSE, trim = TRUE),
+    format(round(coords$y[first_rows], 10), scientific = FALSE, trim = TRUE),
     sep = ","
   )
-  node_ids <- match(rounded, unique(rounded))
+  end_key <- paste(
+    format(round(coords$x[last_rows], 10), scientific = FALSE, trim = TRUE),
+    format(round(coords$y[last_rows], 10), scientific = FALSE, trim = TRUE),
+    sep = ","
+  )
+
+  all_key <- c(start_key, end_key)
+  node_ids <- match(all_key, unique(all_key))
   n_nodes <- max(node_ids)
 
   from <- node_ids[seq_len(n_edges)]
@@ -37,6 +53,9 @@ build_graph_geos <- function(lines) {
   }
 
   # One representative point per unique node
+  starts <- geos::geos_point_start(lines)
+  ends   <- geos::geos_point_end(lines)
+  all_points <- c(starts, ends)
   first_idx <- match(seq_len(n_nodes), node_ids)
   node_points <- all_points[first_idx]
 

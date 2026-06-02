@@ -187,8 +187,12 @@ cnt_path.SpatVector <-
 
 cnt_path_master <-
   function(skeleton_sf, start_point_sf, end_point_sf) {
-    # Build graph from geos linestrings
+    # Convert to geos and ensure only linestrings
     skeleton_geos <- geos::as_geos_geometry(skeleton_sf)
+    if (any(geos::geos_type(skeleton_geos) == "multilinestring")) {
+      skeleton_geos <- geos::geos_unnest(skeleton_geos, keep_multi = FALSE)
+    }
+
     graph <- build_graph_geos(skeleton_geos)
 
     # Find nearest graph nodes for start and end points
