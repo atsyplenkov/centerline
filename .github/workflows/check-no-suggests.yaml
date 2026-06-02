@@ -8,9 +8,9 @@
 # dependency.
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, v0.3.0]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, v0.3.0]
 
 name: check-no-suggests.yaml
 

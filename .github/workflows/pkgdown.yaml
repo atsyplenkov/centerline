@@ -2,9 +2,9 @@
 # and https://github.com/nwtgck/actions-netlify
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, v0.3.0]
   pull_request:
-    branches: [main, master]
+    branches: [main, master, v0.3.0]
   release:
     types: [published]
   workflow_dispatch:
