@@ -24,14 +24,12 @@ Imports:
     wk (>= 0.9),
     sf (>= 1.0),
     geos (>= 0.2.4),
-    sfnetworks (>= 0.6),
     checkmate
 Suggests:
     smoothr (>= 1.0.0),
     testthat (>= 3.0.0),
     geomtextpath (>= 0.1.5),
     terra (>= 1.7),
-    igraph (>= 2.0.0),
     ggplot2 (>= 3.1.0),
     raybevel (>= 0.2.0)
 Config/testthat/edition: 3

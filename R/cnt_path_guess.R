@@ -243,73 +243,61 @@ cnt_path_guess_master <-
         geos::geos_unnest(skeleton_geos, keep_multi = FALSE)
     }
 
-    skeleton_sf <- sf::st_as_sf(skeleton_geos)
-    # Convert skeleton to sfnetworks
-    pol_network <-
-      sfnetworks::as_sfnetwork(
-        x = skeleton_sf,
-        directed = FALSE,
-        length_as_weight = TRUE,
-        edges_as_lines = TRUE
+    # Build graph from geos linestrings
+    graph <- build_graph_geos(skeleton_geos)
+
+    # Find border (outer) points and map them to graph node IDs
+    outer_points <- find_outer_nodes(skeleton_geos)
+    outer_nodes  <- find_closest_nodes(graph$node_points, outer_points)
+    outer_nodes  <- unique(outer_nodes)
+
+    if (length(outer_nodes) <= 1) {
+      return(
+        skeleton_geos |>
+          geos::geos_make_collection() |>
+          geos::geos_line_merge()
       )
-    # Convert sfnetworks to igraph
-    # pol_graph <- igraph::as.igraph(pol_network)
-    df_graph <- igraph::as_data_frame(pol_network)
-    names(df_graph)[3] <- "geometry"
-    df_graph <- df_graph[, c("weight", "geometry")]
-    df_graph$weight <- as.numeric(df_graph$weight)
+    }
 
-    # Find border points of skeleton
-    closest_points <-
-      find_closest_nodes(
-        pol_network,
-        find_outer_nodes(skeleton_geos)
+    # Find the most peripheral outer node using a closeness-like measure:
+    # the node with the largest sum of distances to all other nodes.
+    dist_sums <- vapply(outer_nodes, function(on) {
+      res <- dijkstra(graph, from = on)
+      sum(res$dist[is.finite(res$dist)])
+    }, FUN.VALUE = numeric(1))
+
+    closest_end_points <- outer_nodes[which.max(dist_sums)]
+
+    # Run one all-target Dijkstra from the peripheral node
+    other_nodes <- outer_nodes[outer_nodes != closest_end_points]
+    all_dist <- dijkstra(graph, from = closest_end_points)
+
+    other_dists <- all_dist$dist[other_nodes]
+    valid <- is.finite(other_dists)
+
+    if (!any(valid)) {
+      return(
+        skeleton_geos |>
+          geos::geos_make_collection() |>
+          geos::geos_line_merge()
       )
+    }
 
-    # Find the most distant point from center
-    # It will serve as the end point
-    closest_end_points <-
-      closest_points[which.min(
-        igraph::closeness(pol_network, vid = closest_points)
-      )]
+    target_node <- other_nodes[which.max(other_dists)]
 
-    # Find paths
-    paths <-
-      base::suppressWarnings(
-        sfnetworks::st_network_paths(
-          pol_network,
-          to = closest_points[closest_points != closest_end_points],
-          from = closest_end_points,
-          weights = "weight"
-        )
+    # Reconstruct shortest path to the farthest outer node
+    path <- dijkstra(graph, from = closest_end_points, to = target_node)
+
+    if (is.null(path)) {
+      return(
+        skeleton_geos |>
+          geos::geos_make_collection() |>
+          geos::geos_line_merge()
       )
+    }
 
-    # Paths lengths in counts
-    paths_length <- lengths(paths$edge_paths)
-
-    # Filter non-zero paths
-    paths_length_flag <- paths_length > 1
-    paths_length_nonzero <- paths_length[paths_length_flag]
-    edge_paths_nonzero <- paths$edge_paths[paths_length_flag]
-
-    # Estimate paths lengths
-    edge_paths_vec <- unlist(edge_paths_nonzero, use.names = FALSE)
-    edge_paths_groups <-
-      rep(
-        seq_along(edge_paths_nonzero),
-        times = paths_length_nonzero
-      )
-    edge_paths_length <- df_graph[edge_paths_vec, "weight"]
-
-    # Sum paths lengths in meters
-    true_paths_igraph <-
-      tapply(edge_paths_length, edge_paths_groups, FUN = sum)
-
-    # Return the longest path
-    longest_path_igraph <- which.max(true_paths_igraph)
     longest_path_geos <-
-      df_graph[edge_paths_nonzero[[longest_path_igraph]], "geometry"] |>
-      geos::as_geos_geometry() |>
+      graph$geometry[path$edges] |>
       geos::geos_make_collection() |>
       geos::geos_line_merge()
 

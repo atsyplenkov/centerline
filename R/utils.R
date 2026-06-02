@@ -120,13 +120,8 @@ find_outer_nodes <-
   }
 
 find_closest_nodes <-
-  function(sf_graph, nodes_geos) {
-    geos_graph <-
-      sfnetworks::activate(sf_graph, "nodes") |>
-      sf::st_as_sf() |>
-      geos::as_geos_geometry() |>
-      geos::geos_strtree()
-
+  function(node_points, nodes_geos) {
+    geos_graph <- geos::geos_strtree(node_points)
     geos::geos_nearest(nodes_geos, geos_graph)
   }
 

@@ -7,9 +7,9 @@
 #' \code{start_point} parameters.
 #'
 #' @details
-#' The following function uses the [sfnetworks::st_network_paths()] approach to
-#' connect \code{start_point} with \code{end_point} by using the
-#' \code{skeleton} of a closed polygon as potential routes.
+#' The following function builds an internal edge-weighted graph from the
+#' skeleton and uses Dijkstra's algorithm to find the shortest path connecting
+#' \code{start_point} with \code{end_point} along the skeleton.
 #'
 #' It is important to note that multiple starting points are permissible,
 #' but there can only be **one ending point**. Should there be two or more
@@ -187,53 +187,43 @@ cnt_path.SpatVector <-
 
 cnt_path_master <-
   function(skeleton_sf, start_point_sf, end_point_sf) {
-    # Convert skeleton sf object to sfnetworks
-    pol_network <-
-      sfnetworks::as_sfnetwork(
-        x = skeleton_sf,
-        directed = FALSE,
-        length_as_weight = TRUE,
-        edges_as_lines = TRUE
-      )
+    # Build graph from geos linestrings
+    skeleton_geos <- geos::as_geos_geometry(skeleton_sf)
+    graph <- build_graph_geos(skeleton_geos)
 
-    # Convert sfnetworks to igraph
-    df_graph <- igraph::as_data_frame(pol_network)
-    names(df_graph)[3] <- "geometry"
-    df_graph <- df_graph[, c("weight", "geometry")]
-    df_graph$weight <- as.numeric(df_graph$weight)
+    # Find nearest graph nodes for start and end points
+    start_geos <- geos::as_geos_geometry(start_point_sf)
+    end_geos   <- geos::as_geos_geometry(end_point_sf)
 
-    # Find indices of nearest nodes for start ...
-    start_nodes <-
-      sf::st_nearest_feature(start_point_sf, pol_network)
-    # ... and end points
-    end_nodes <-
-      sf::st_nearest_feature(end_point_sf, pol_network)
+    start_nodes <- find_closest_nodes(graph$node_points, start_geos)
+    end_nodes   <- find_closest_nodes(graph$node_points, end_geos)
 
     # Check if there are several end nodes
     stopifnot(
       "Only one end point is allowed" = length(end_nodes) == 1
     )
 
-    # Find the shortest path between two points
-    paths <-
-      sfnetworks::st_network_paths(
-        pol_network,
-        from = end_nodes,
-        to = start_nodes,
-        weights = "weight"
-      )
+    # Find shortest path from the end node to each start node
+    paths <- lapply(start_nodes, function(s) {
+      p <- dijkstra(graph, from = end_nodes, to = s)
+      if (is.null(p)) {
+        stop("No path found between the specified points in the skeleton.")
+      }
+      p
+    })
 
-    # Convert to GEOS geometries and create a GEOS collection
+    # Convert edge indices to GEOS geometries and merge
     lines_list_geos <-
-      lapply(paths$edge_paths, function(x) df_graph[x, "geometry"]) |>
-      lapply(geos::as_geos_geometry) |>
-      lapply(geos::geos_make_collection) |>
-      lapply(geos::geos_line_merge)
+      lapply(paths, function(p) {
+        graph$geometry[p$edges] |>
+          geos::geos_make_collection() |>
+          geos::geos_line_merge()
+      })
 
     # Check if we need to reverse the lines
     rev_lines_list <-
       reverse_lines_if_needed(lines_list_geos, end_point_sf)
 
-    # Return pathes binded together as GEOS geometry
+    # Return paths bound together as GEOS geometry
     do.call(c, rev_lines_list)
   }
