@@ -66,58 +66,54 @@
 #'   ) +
 #'   theme_void()
 #' }
-geom_cnt <-
-  function(
-    mapping = ggplot2::aes(),
-    data = NULL,
-    stat = "sf",
-    position = "identity",
-    na.rm = FALSE,
-    show.legend = NA,
-    inherit.aes = TRUE,
-    keep = 0.5,
-    method = c("voronoi", "straight"),
-    simplify = TRUE,
-    ...
-  ) {
-    check_package("ggplot2")
+geom_cnt <- function(
+  mapping = ggplot2::aes(),
+  data = NULL,
+  stat = "sf",
+  position = "identity",
+  na.rm = FALSE,
+  show.legend = NA,
+  inherit.aes = TRUE,
+  keep = 0.5,
+  method = c("voronoi", "straight"),
+  simplify = TRUE,
+  ...
+) {
+  check_package("ggplot2")
 
-    # Check if the input data is an sf object
-    checkmate::assert_class(data, "sf")
-    check_polygons(data)
-    checkmate::assert_logical(simplify)
+  # Check if the input data is an sf object
+  checkmate::assert_class(data, "sf")
+  check_polygons(data)
+  checkmate::assert_logical(simplify)
 
-    data_centerline_geos <-
-      cnt_path_guess(
-        input = data,
-        keep = keep,
-        method = method,
-        return_geos = TRUE
-      )
+  data_centerline_geos <- cnt_path_guess(
+    input = data,
+    keep = keep,
+    method = method,
+    return_geos = TRUE
+  )
 
-    if (simplify) {
-      check_package("smoothr")
-      data_centerline <-
-        geos_ksmooth(data_centerline_geos) |>
-        sf::st_as_sf() |>
-        cbind(sf::st_drop_geometry(data))
-    } else {
-      data_centerline <-
-        sf::st_as_sf(data_centerline_geos) |>
-        cbind(sf::st_drop_geometry(data))
-    }
-
-    ggplot2::geom_sf(
-      mapping = mapping,
-      data = data_centerline,
-      stat = stat,
-      position = position,
-      na.rm = na.rm,
-      show.legend = show.legend,
-      inherit.aes = inherit.aes,
-      ...
-    )
+  if (simplify) {
+    check_package("smoothr")
+    data_centerline <- geos_ksmooth(data_centerline_geos) |>
+      sf::st_as_sf() |>
+      cbind(sf::st_drop_geometry(data))
+  } else {
+    data_centerline <- sf::st_as_sf(data_centerline_geos) |>
+      cbind(sf::st_drop_geometry(data))
   }
+
+  ggplot2::geom_sf(
+    mapping = mapping,
+    data = data_centerline,
+    stat = stat,
+    position = position,
+    na.rm = na.rm,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    ...
+  )
+}
 
 #' Plot label or text on centerline with ggplot2
 #' @rdname geom_cnt_text
@@ -206,114 +202,106 @@ geom_cnt <-
 #' theme_void()
 #' }
 #'
-geom_cnt_text <-
-  function(
-    mapping = ggplot2::aes(),
-    data = NULL,
-    stat = "sf",
-    position = "identity",
-    na.rm = FALSE,
-    show.legend = NA,
-    inherit.aes = TRUE,
-    keep = 0.5,
-    method = c("voronoi", "straight"),
-    simplify = TRUE,
-    ...
-  ) {
-    check_package("geomtextpath")
+geom_cnt_text <- function(
+  mapping = ggplot2::aes(),
+  data = NULL,
+  stat = "sf",
+  position = "identity",
+  na.rm = FALSE,
+  show.legend = NA,
+  inherit.aes = TRUE,
+  keep = 0.5,
+  method = c("voronoi", "straight"),
+  simplify = TRUE,
+  ...
+) {
+  check_package("geomtextpath")
 
-    # Check if the input data is an sf object
-    checkmate::assert_class(data, "sf")
-    check_polygons(data)
-    checkmate::assert_logical(simplify)
+  # Check if the input data is an sf object
+  checkmate::assert_class(data, "sf")
+  check_polygons(data)
+  checkmate::assert_logical(simplify)
 
-    data_centerline_geos <-
-      cnt_path_guess(
-        input = data,
-        keep = keep,
-        method = method,
-        return_geos = TRUE
-      )
+  data_centerline_geos <- cnt_path_guess(
+    input = data,
+    keep = keep,
+    method = method,
+    return_geos = TRUE
+  )
 
-    if (simplify) {
-      check_package("smoothr")
-      data_centerline <-
-        geos_ksmooth(data_centerline_geos) |>
-        sf::st_as_sf() |>
-        cbind(sf::st_drop_geometry(data))
-    } else {
-      data_centerline <-
-        sf::st_as_sf(data_centerline_geos) |>
-        cbind(sf::st_drop_geometry(data))
-    }
-
-    # Call geomtextpath::geom_textsf() with the transformed data
-    geomtextpath::geom_textsf(
-      mapping = mapping,
-      data = data_centerline,
-      stat = stat,
-      position = position,
-      na.rm = na.rm,
-      show.legend = show.legend,
-      inherit.aes = inherit.aes,
-      ...
-    )
+  if (simplify) {
+    check_package("smoothr")
+    data_centerline <- geos_ksmooth(data_centerline_geos) |>
+      sf::st_as_sf() |>
+      cbind(sf::st_drop_geometry(data))
+  } else {
+    data_centerline <- sf::st_as_sf(data_centerline_geos) |>
+      cbind(sf::st_drop_geometry(data))
   }
+
+  # Call geomtextpath::geom_textsf() with the transformed data
+  geomtextpath::geom_textsf(
+    mapping = mapping,
+    data = data_centerline,
+    stat = stat,
+    position = position,
+    na.rm = na.rm,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    ...
+  )
+}
 
 
 #' @export
 #' @rdname geom_cnt_text
 #' @inheritParams cnt_skeleton
-geom_cnt_label <-
-  function(
-    mapping = ggplot2::aes(),
-    data = NULL,
-    stat = "sf",
-    position = "identity",
-    na.rm = FALSE,
-    show.legend = NA,
-    inherit.aes = TRUE,
-    keep = 0.5,
-    method = c("voronoi", "straight"),
-    simplify = TRUE,
-    ...
-  ) {
-    check_package("geomtextpath")
+geom_cnt_label <- function(
+  mapping = ggplot2::aes(),
+  data = NULL,
+  stat = "sf",
+  position = "identity",
+  na.rm = FALSE,
+  show.legend = NA,
+  inherit.aes = TRUE,
+  keep = 0.5,
+  method = c("voronoi", "straight"),
+  simplify = TRUE,
+  ...
+) {
+  check_package("geomtextpath")
 
-    # Check if the input data is an sf object
-    checkmate::assert_class(data, "sf")
-    check_polygons(data)
-    checkmate::assert_logical(simplify)
+  # Check if the input data is an sf object
+  checkmate::assert_class(data, "sf")
+  check_polygons(data)
+  checkmate::assert_logical(simplify)
 
-    data_centerline_geos <-
-      cnt_path_guess(
-        input = data,
-        keep = keep,
-        method = method,
-        return_geos = TRUE
-      )
+  data_centerline_geos <- cnt_path_guess(
+    input = data,
+    keep = keep,
+    method = method,
+    return_geos = TRUE
+  )
 
-    if (simplify) {
-      check_package("smoothr")
-      data_centerline <-
-        geos_ksmooth(data_centerline_geos) |>
-        sf::st_as_sf() |>
-        cbind(sf::st_drop_geometry(data))
-    } else {
-      data_centerline <-
-        sf::st_as_sf(data_centerline_geos) |>
-        cbind(sf::st_drop_geometry(data))
-    }
-
-    # Call geomtextpath::geom_textsf() with the transformed data
-    geomtextpath::geom_labelsf(
-      mapping = mapping,
-      data = data_centerline,
-      stat = stat,
-      position = position,
-      na.rm = na.rm,
-      show.legend = show.legend,
-      inherit.aes = inherit.aes,
-      ...
-    )
+  if (simplify) {
+    check_package("smoothr")
+    data_centerline <- geos_ksmooth(data_centerline_geos) |>
+      sf::st_as_sf() |>
+      cbind(sf::st_drop_geometry(data))
+  } else {
+    data_centerline <- sf::st_as_sf(data_centerline_geos) |>
+      cbind(sf::st_drop_geometry(data))
   }
+
+  # Call geomtextpath::geom_textsf() with the transformed data
+  geomtextpath::geom_labelsf(
+    mapping = mapping,
+    data = data_centerline,
+    stat = stat,
+    position = position,
+    na.rm = na.rm,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    ...
+  )
+}

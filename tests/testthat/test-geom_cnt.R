@@ -1,16 +1,14 @@
-lake <-
-  sf::st_read(
-    system.file("extdata/example.gpkg", package = "centerline"),
-    layer = "lake",
-    quiet = TRUE
-  )
+lake <- sf::st_read(
+  system.file("extdata/example.gpkg", package = "centerline"),
+  layer = "lake",
+  quiet = TRUE
+)
 
-shapes <-
-  sf::st_read(
-    system.file("extdata/example.gpkg", package = "centerline"),
-    layer = "shapes",
-    quiet = TRUE
-  )
+shapes <- sf::st_read(
+  system.file("extdata/example.gpkg", package = "centerline"),
+  layer = "shapes",
+  quiet = TRUE
+)
 
 test_that("The geom_cnt_*() creates ggproto objects", {
   skip_if_not_installed("geomtextpath")
@@ -36,15 +34,9 @@ test_that("geom_cnt_*() create correct types", {
 
   skip_if_not(packageVersion("ggplot2") > "3.5.2")
 
-  ln <-
-    ggplot2::ggplot(lake) +
-    geom_cnt(data = lake)
-  txt <-
-    ggplot2::ggplot(lake) +
-    geom_cnt_text(data = lake, label = "label")
-  lbl <-
-    ggplot2::ggplot(lake) +
-    geom_cnt_label(data = lake, label = "label")
+  ln <- ggplot2::ggplot(lake) + geom_cnt(data = lake)
+  txt <- ggplot2::ggplot(lake) + geom_cnt_text(data = lake, label = "label")
+  lbl <- ggplot2::ggplot(lake) + geom_cnt_label(data = lake, label = "label")
 
   # Suppress plot output during testing
   pdf(file = NULL)
@@ -71,14 +63,10 @@ test_that("geom_cnt_*() smiplification works", {
 
   skip_if_not(packageVersion("ggplot2") > "3.5.2")
 
-  ln <-
-    ggplot2::ggplot(lake) +
-    geom_cnt(data = lake, simplify = TRUE)
-  txt <-
-    ggplot2::ggplot(lake) +
+  ln <- ggplot2::ggplot(lake) + geom_cnt(data = lake, simplify = TRUE)
+  txt <- ggplot2::ggplot(lake) +
     geom_cnt_text(data = lake, label = "label", simplify = TRUE)
-  lbl <-
-    ggplot2::ggplot(lake) +
+  lbl <- ggplot2::ggplot(lake) +
     geom_cnt_label(data = lake, label = "label", simplify = TRUE)
 
   # Suppress plot output during testing
@@ -106,14 +94,10 @@ test_that("geom_cnt_*() smiplification works with mutiple geometries", {
 
   skip_if_not(packageVersion("ggplot2") > "3.5.2")
 
-  ln <-
-    ggplot2::ggplot(shapes) +
-    geom_cnt(data = shapes, simplify = TRUE)
-  txt <-
-    ggplot2::ggplot(shapes) +
+  ln <- ggplot2::ggplot(shapes) + geom_cnt(data = shapes, simplify = TRUE)
+  txt <- ggplot2::ggplot(shapes) +
     geom_cnt_text(data = shapes, label = "label", simplify = TRUE)
-  lbl <-
-    ggplot2::ggplot(shapes) +
+  lbl <- ggplot2::ggplot(shapes) +
     geom_cnt_label(data = shapes, label = "label", simplify = TRUE)
 
   # Suppress plot output during testing
