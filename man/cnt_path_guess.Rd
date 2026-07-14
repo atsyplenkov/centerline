@@ -17,7 +17,7 @@ using specified parameters (see inherit params below).}
 whether the \code{geos_geometry} should be returned.}
 
 \item{...}{
-  Arguments passed on to \code{\link[=cnt_skeleton]{cnt_skeleton}}
+  Arguments passed on to \code{\link{cnt_skeleton}}
   \describe{
     \item{\code{keep}}{numeric, proportion of points to retain (0.05-5.0; default 0.5).
 See Details.}

@@ -29,7 +29,7 @@ This function generates skeletons of closed polygon objects.
 \itemize{
 \item If \code{keep = 1}, no transformation will occur. The
 function will use the original geometry to find the skeleton.
-\item If the \code{keep} parameter is below 1, then the \code{\link[geos:geos_centroid]{geos::geos_simplify()}}
+\item If the \code{keep} parameter is below 1, then the \code{\link[geos:geos_simplify]{geos::geos_simplify()}}
 function will be used. So the original input
 geometry would be simplified, and the resulting skeleton will be cleaner but
 maybe more edgy.
@@ -41,7 +41,7 @@ try \code{rmapshaper::ms_simplify()} first and then find the polygon skeleton
 with \code{keep = 1}, i.e.
 \code{cnt_skeleton(rmapshaper::ms_simplify(polygon_sf), keep = 1)}
 \item If the \code{keep} is above 1, then the densification
-algorithm is applied using the \code{\link[geos:geos_centroid]{geos::geos_densify()}} function. This may
+algorithm is applied using the \code{\link[geos:geos_densify]{geos::geos_densify()}} function. This may
 produce a very large object if keep is set more than 2. However, the
 resulting skeleton would potentially be more accurate.
 }
@@ -50,7 +50,7 @@ resulting skeleton would potentially be more accurate.
 \subsection{Skeleton method}{
 \itemize{
 \item If \code{method = "voronoi"} (default), the skeleton will be generated
-using the \code{\link[geos:geos_delaunay_triangles]{geos::geos_voronoi_edges()}} function. This is application of the
+using the \code{\link[geos:geos_voronoi_edges]{geos::geos_voronoi_edges()}} function. This is application of the
 Voronoi diagram algorithm (Voronoi, 1908).
 A Voronoi diagram partitions space into regions based on the distance to
 the polygon's vertices. The edges of these

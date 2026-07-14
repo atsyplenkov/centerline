@@ -130,7 +130,7 @@ the details in \code{\link[geomtextpath:geom_textpath]{geom_textpath()}}.}
 }
 \description{
 Binding for \code{\link[geomtextpath:geom_textsf]{geomtextpath::geom_textsf()}} and
-\code{\link[geomtextpath:geom_textsf]{geomtextpath::geom_labelsf()}}
+\code{\link[geomtextpath:geom_labelsf]{geomtextpath::geom_labelsf()}}
 }
 \details{
 \subsection{Aesthetics}{
@@ -208,5 +208,5 @@ theme_void()
 }
 \seealso{
 \code{\link[=geom_cnt]{geom_cnt()}}, \code{\link[geomtextpath:geom_textsf]{geomtextpath::geom_textsf()}},
-\code{\link[geomtextpath:geom_textsf]{geomtextpath::geom_labelsf()}}, \code{\link[ggplot2:ggsf]{ggplot2::geom_sf()}}
+\code{\link[geomtextpath:geom_labelsf]{geomtextpath::geom_labelsf()}}, \code{\link[ggplot2:geom_sf]{ggplot2::geom_sf()}}
 }
