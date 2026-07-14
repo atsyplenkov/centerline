@@ -380,3 +380,34 @@ test_that("cnt_path_guess works with geometry-only SpatVector", {
   expect_equal(terra::crs(result), terra::crs(v))
   expect_equal(nrow(result), nrow(v))
 })
+
+test_that("cnt_path_guess forwards anchors only when building a skeleton", {
+  polygon <- sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon",
+    quiet = TRUE
+  )
+  points <- sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon_points",
+    quiet = TRUE
+  )
+  boundary <- sf::st_boundary(polygon)
+  anchors <- points[as.numeric(sf::st_distance(points, boundary)) == 0, ]
+  anchors <- anchors[1:2, ]
+
+  # With skeleton = NULL, anchors pass through ... while building.
+  result_built <- cnt_path_guess(polygon, keep = 1, anchors = anchors)
+  expect_s3_class(result_built, "sf")
+  expect_contains(get_geom_type(result_built), "LINESTRING")
+
+  # With a valid supplied skeleton, the same extra argument is ignored.
+  skeleton <- cnt_skeleton(polygon, keep = 1)
+  result_supplied <- cnt_path_guess(
+    polygon,
+    skeleton = skeleton,
+    anchors = anchors
+  )
+  expect_s3_class(result_supplied, "sf")
+  expect_contains(get_geom_type(result_supplied), "LINESTRING")
+})

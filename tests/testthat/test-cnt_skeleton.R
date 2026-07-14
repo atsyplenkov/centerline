@@ -257,3 +257,424 @@ test_that("cnt_skeleton generates straight skeletons", {
   expect_warning(cnt_skeleton(shape_w_hole, keep = 1.1, method = "straight"))
   expect_warning(cnt_skeleton(shape_no_hole, keep = 1.1, method = "straight"))
 })
+
+# Boundary anchors --------------------------------------------------------
+
+example_boundary_anchors_geos <- function() {
+  polygon <- sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon",
+    quiet = TRUE
+  ) |>
+    geos::as_geos_geometry()
+  points <- sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "polygon_points",
+    quiet = TRUE
+  ) |>
+    geos::as_geos_geometry()
+  boundary <- geos::geos_boundary(polygon)
+  anchors <- points[geos::geos_equals(
+    geos::geos_intersection(boundary, points),
+    points
+  )]
+  list(polygon = polygon, anchors = anchors[1:2])
+}
+
+anchor_grid_size <- function(polygon) {
+  bbox <- unclass(wk::wk_bbox(polygon))
+  sqrt((bbox$xmax - bbox$xmin)^2 + (bbox$ymax - bbox$ymin)^2) * 1e-7
+}
+
+skeleton_nodes_network <- function(skeleton) {
+  lines <- skeleton |>
+    geos::geos_node() |>
+    geos::geos_unnest(keep_multi = FALSE) |>
+    sf::st_as_sf()
+  net <- sfnetworks::as_sfnetwork(
+    lines,
+    directed = FALSE,
+    edges_as_lines = TRUE
+  )
+  nodes <- sfnetworks::activate(net, "nodes") |> sf::st_as_sf()
+  list(
+    network = net,
+    nodes = nodes,
+    degree = igraph::degree(net),
+    xy = sf::st_coordinates(nodes)
+  )
+}
+
+test_that("boundary anchors attach approved junctions on example.gpkg", {
+  data <- example_boundary_anchors_geos()
+  polygon <- data$polygon
+  anchors <- data$anchors
+  ordinary <- cnt_skeleton(polygon, keep = 1)
+  ordinary_net <- skeleton_nodes_network(ordinary)
+  grid_size <- anchor_grid_size(polygon)
+
+  # Pre-augmentation: anchors are not ordinary skeleton nodes.
+  for (i in seq_along(anchors)) {
+    d <- as.numeric(sf::st_distance(
+      sf::st_as_sf(anchors[i]),
+      ordinary_net$nodes
+    ))
+    expect_true(all(d > 0))
+  }
+
+  anchored <- cnt_skeleton(polygon, keep = 1, anchors = anchors)
+  expect_true(geos::geos_covers(anchored, ordinary))
+
+  aug <- skeleton_nodes_network(anchored)
+  approved <- list(
+    c(1830873.1875, 5453788.018333333),
+    c(1830873.699999998, 5453778.95)
+  )
+  expected_lengths <- c(0.489655, 0.489126)
+  boundary <- geos::geos_boundary(polygon)
+
+  for (i in seq_along(anchors)) {
+    d <- as.numeric(sf::st_distance(sf::st_as_sf(anchors[i]), aug$nodes))
+    zero_ids <- which(d == 0)
+    expect_equal(length(zero_ids), 1L)
+    expect_equal(unname(aug$degree[[zero_ids[[1]]]]), 1L)
+
+    nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+    expect_equal(length(nbrs), 1L)
+    expect_true(aug$degree[[nbrs[[1]]]] >= 3L)
+    target_xy <- aug$xy[nbrs[[1]], 1:2]
+    expect_lt(sqrt(sum((target_xy - approved[[i]])^2)), grid_size)
+
+    axy <- as.numeric(wk::wk_coords(anchors[i])[c("x", "y")])
+    expect_equal(
+      sqrt(sum((target_xy - axy)^2)),
+      expected_lengths[[i]],
+      tolerance = 1e-3
+    )
+
+    connector <- geos::geos_make_linestring(
+      x = c(axy[[1]], target_xy[[1]]),
+      y = c(axy[[2]], target_xy[[2]]),
+      crs = wk::wk_crs(polygon)
+    )
+    raw_pt <- geos::geos_make_point(
+      target_xy[[1]],
+      target_xy[[2]],
+      crs = wk::wk_crs(polygon)
+    )
+    expect_true(geos::geos_covered_by(connector, polygon))
+    expect_true(geos::geos_equals(
+      geos::geos_intersection(connector, boundary),
+      anchors[i]
+    ))
+    expect_true(geos::geos_equals(
+      geos::geos_intersection(connector, ordinary),
+      raw_pt
+    ))
+  }
+})
+
+test_that("boundary anchors scale with relative precision grid", {
+  data <- example_boundary_anchors_geos()
+  polygon0 <- data$polygon
+  anchors0 <- data$anchors
+  bbox <- unclass(wk::wk_bbox(polygon0))
+  origin <- c(bbox$xmin, bbox$ymin)
+
+  shift_geom <- function(geom, origin, scale) {
+    coords <- wk::wk_coords(geom)
+    x <- (coords$x - origin[[1]]) * scale
+    y <- (coords$y - origin[[2]]) * scale
+    types <- geos::geos_type(geom)
+    out <- lapply(seq_along(geom), function(i) {
+      idx <- coords$feature_id == i
+      if (types[[i]] == "point") {
+        geos::geos_make_point(x[idx][[1]], y[idx][[1]])
+      } else if (types[[i]] %in% c("polygon", "multipolygon")) {
+        # rebuild via WKT translation of shifted coords
+        gsf <- sf::st_as_sf(geom[i])
+        mat <- sf::st_coordinates(gsf)
+        mat[, 1] <- (mat[, 1] - origin[[1]]) * scale
+        mat[, 2] <- (mat[, 2] - origin[[2]]) * scale
+        # drop ring/id columns and rebuild polygon
+        ring <- mat[, 1:2]
+        sf::st_as_sf(sf::st_sfc(sf::st_polygon(list(ring)))) |>
+          geos::as_geos_geometry()
+      } else {
+        stop("unsupported type")
+      }
+    })
+    do.call(c, out)
+  }
+
+  # Use affine on sf for robust polygon scaling
+  scale_pair <- function(scale) {
+    pol_sf <- sf::st_as_sf(polygon0)
+    anc_sf <- sf::st_as_sf(anchors0)
+    shift <- function(g) {
+      sf::st_geometry(g) <- (sf::st_geometry(g) - origin) * scale
+      sf::st_crs(g) <- NA
+      g
+    }
+    list(
+      polygon = geos::as_geos_geometry(shift(pol_sf)),
+      anchors = geos::as_geos_geometry(shift(anc_sf))
+    )
+  }
+
+  for (scale in c(1e-6, 1e6)) {
+    pair <- scale_pair(scale)
+    ordinary <- cnt_skeleton(pair$polygon, keep = 1)
+    ordinary_net <- skeleton_nodes_network(ordinary)
+    for (i in seq_along(pair$anchors)) {
+      d <- as.numeric(sf::st_distance(
+        sf::st_as_sf(pair$anchors[i]),
+        ordinary_net$nodes
+      ))
+      expect_true(all(d > 0))
+    }
+    anchored <- cnt_skeleton(pair$polygon, keep = 1, anchors = pair$anchors)
+    aug <- skeleton_nodes_network(anchored)
+    targets <- list()
+    for (i in seq_along(pair$anchors)) {
+      d <- as.numeric(sf::st_distance(sf::st_as_sf(pair$anchors[i]), aug$nodes))
+      zero_ids <- which(d == 0)
+      expect_equal(length(zero_ids), 1L)
+      expect_equal(unname(aug$degree[[zero_ids[[1]]]]), 1L)
+      nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+      targets[[i]] <- aug$xy[nbrs[[1]], 1:2]
+    }
+    # normalized junction choice: same relative offset order
+    axy1 <- as.numeric(wk::wk_coords(pair$anchors[1])[c("x", "y")])
+    axy2 <- as.numeric(wk::wk_coords(pair$anchors[2])[c("x", "y")])
+    # route endpoints are exact
+    path <- expect_no_warning(cnt_path(
+      anchored,
+      pair$anchors[1],
+      pair$anchors[2]
+    ))
+    expect_equal(
+      geos::geos_distance(geos::geos_point_start(path), pair$anchors[1]),
+      0
+    )
+    expect_equal(
+      geos::geos_distance(geos::geos_point_end(path), pair$anchors[2]),
+      0
+    )
+  }
+})
+
+test_that("check_anchors validates class, geometry, CRS, and duplicates", {
+  polygon <- sf::st_sfc(
+    sf::st_polygon(list(matrix(
+      c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0),
+      ncol = 2,
+      byrow = TRUE
+    ))),
+    crs = 2193
+  )
+  anchors <- sf::st_sfc(
+    sf::st_point(c(0.5, 0)),
+    sf::st_point(c(1, 0.5)),
+    crs = 2193
+  )
+
+  expect_true(check_anchors(polygon, NULL))
+  expect_true(check_anchors(polygon, anchors[0]))
+
+  expect_error(
+    check_anchors(polygon, geos::as_geos_geometry(anchors)),
+    "anchors must use the same spatial class as input"
+  )
+  expect_error(
+    check_anchors(
+      polygon,
+      sf::st_sfc(
+        sf::st_linestring(matrix(c(0, 0, 1, 1), ncol = 2, byrow = TRUE)),
+        crs = 2193
+      )
+    ),
+    "anchors must contain non-empty POINT geometries"
+  )
+  expect_error(
+    check_anchors(polygon, sf::st_sfc(sf::st_point(c(0.5, 0)), crs = 4326)),
+    "anchors and input must use the same CRS"
+  )
+  expect_error(
+    check_anchors(
+      polygon,
+      sf::st_sfc(sf::st_point(c(0.5, 0)), sf::st_point(c(0.5, 0)), crs = 2193)
+    ),
+    "anchors must not contain duplicate points"
+  )
+})
+
+test_that("anchors require unique polygon-part boundary membership", {
+  poly <- geos::as_geos_geometry("POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))")
+  expect_error(
+    cnt_skeleton(
+      poly,
+      keep = 1,
+      anchors = geos::as_geos_geometry("POINT (0.5 0.5)")
+    ),
+    "Each anchor must lie on exactly one polygon-part boundary"
+  )
+
+  # Adjacent unit squares sharing x = 1
+  left <- sf::st_polygon(list(matrix(
+    c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0),
+    ncol = 2,
+    byrow = TRUE
+  )))
+  right <- sf::st_polygon(list(matrix(
+    c(1, 0, 2, 0, 2, 1, 1, 1, 1, 0),
+    ncol = 2,
+    byrow = TRUE
+  )))
+  parts <- geos::as_geos_geometry(sf::st_sfc(left, right))
+  shared <- geos::as_geos_geometry("POINT (1 0.5)")
+  expect_error(
+    cnt_skeleton(parts, keep = 1, anchors = shared),
+    "Each anchor must lie on exactly one polygon-part boundary"
+  )
+})
+
+test_that("add_boundary_anchors fails without degree-three junctions", {
+  polygon <- geos::as_geos_geometry("POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))")
+  skeleton <- geos::as_geos_geometry("LINESTRING (0.5 0, 0.5 1)")
+  anchor <- geos::as_geos_geometry("POINT (0.5 0)")
+  expect_error(
+    add_boundary_anchors(skeleton, polygon, anchor),
+    "No valid interior junction connector"
+  )
+})
+
+test_that("add_boundary_anchors rejects concavity-crossing chords", {
+  polygon <- geos::as_geos_geometry(
+    "POLYGON ((0 0, 4 0, 4 1, 1 1, 1 3, 4 3, 4 4, 0 4, 0 0))"
+  )
+  # Hand-built ordinary network with two degree-three junctions.
+  skeleton <- c(
+    geos::as_geos_geometry("LINESTRING (0.5 0.5, 0.5 2)"),
+    geos::as_geos_geometry("LINESTRING (0.5 0.5, 0.2 0.2)"),
+    geos::as_geos_geometry("LINESTRING (0.5 0.5, 0.8 0.2)"),
+    geos::as_geos_geometry("LINESTRING (2 3.5, 3.5 3.5)"),
+    geos::as_geos_geometry("LINESTRING (2 3.5, 2 3.2)"),
+    geos::as_geos_geometry("LINESTRING (2 3.5, 2 3.8)")
+  ) |>
+    geos::geos_make_collection() |>
+    geos::geos_line_merge()
+  anchor <- geos::as_geos_geometry("POINT (1 2)")
+  augmented <- add_boundary_anchors(skeleton, polygon, anchor)
+
+  expect_true(geos::geos_covers(augmented, skeleton))
+  boundary <- geos::geos_boundary(polygon)
+  # Selected connector is to (0.5, 0.5), not the notch-crossing (2, 3.5)
+  connector <- geos::geos_make_linestring(x = c(1, 0.5), y = c(2, 0.5))
+  expect_true(geos::geos_covered_by(connector, polygon))
+  expect_true(geos::geos_equals(
+    geos::geos_intersection(connector, boundary),
+    anchor
+  ))
+
+  aug <- skeleton_nodes_network(augmented)
+  d <- as.numeric(sf::st_distance(sf::st_as_sf(anchor), aug$nodes))
+  zero_ids <- which(d == 0)
+  expect_equal(length(zero_ids), 1L)
+  nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+  target <- aug$xy[nbrs[[1]], 1:2]
+  expect_equal(target[[1]], 0.5, tolerance = 1e-9)
+  expect_equal(target[[2]], 0.5, tolerance = 1e-9)
+})
+
+test_that("add_boundary_anchors rejects early skeleton crossings", {
+  polygon <- geos::as_geos_geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")
+  skeleton <- c(
+    geos::as_geos_geometry("LINESTRING (2 5, 2 4)"),
+    geos::as_geos_geometry("LINESTRING (2 5, 1.5 4.5)"),
+    geos::as_geos_geometry("LINESTRING (2 5, 3 5)"),
+    geos::as_geos_geometry("LINESTRING (1 4.8, 1 5.2)"),
+    geos::as_geos_geometry("LINESTRING (8 8, 8 9)"),
+    geos::as_geos_geometry("LINESTRING (8 8, 7 8)"),
+    geos::as_geos_geometry("LINESTRING (8 8, 9 8)")
+  ) |>
+    geos::geos_make_collection() |>
+    geos::geos_line_merge()
+  anchor <- geos::as_geos_geometry("POINT (0 5)")
+  augmented <- add_boundary_anchors(skeleton, polygon, anchor)
+
+  aug <- skeleton_nodes_network(augmented)
+  d <- as.numeric(sf::st_distance(sf::st_as_sf(anchor), aug$nodes))
+  zero_ids <- which(d == 0)
+  nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+  target <- aug$xy[nbrs[[1]], 1:2]
+  expect_equal(target[[1]], 8, tolerance = 1e-9)
+  expect_equal(target[[2]], 8, tolerance = 1e-9)
+
+  # Direct connector has no intermediate node at (1, 5)
+  connector <- geos::geos_make_linestring(x = c(0, 8), y = c(5, 8))
+  inter <- geos::geos_intersection(connector, skeleton)
+  # Rejected low-cost junction would include (1,5) as extra intersection
+  bad <- geos::geos_make_linestring(x = c(0, 2), y = c(5, 5))
+  bad_inter <- geos::geos_intersection(bad, skeleton)
+  expect_false(isTRUE(geos::geos_equals(
+    bad_inter,
+    geos::as_geos_geometry("POINT (2 5)")
+  )))
+})
+
+test_that("anchors attach per unnested polygon part for multi inputs", {
+  left <- sf::st_polygon(list(matrix(
+    c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0),
+    ncol = 2,
+    byrow = TRUE
+  )))
+  right <- sf::st_polygon(list(matrix(
+    c(3, 0, 4, 0, 4, 1, 3, 1, 3, 0),
+    ncol = 2,
+    byrow = TRUE
+  )))
+  polys_sf <- sf::st_sf(id = c("L", "R"), geometry = sf::st_sfc(left, right))
+  multi_sf <- sf::st_sf(
+    id = "M",
+    geometry = sf::st_sfc(sf::st_multipolygon(list(
+      list(matrix(c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0), ncol = 2, byrow = TRUE)),
+      list(matrix(c(3, 0, 4, 0, 4, 1, 3, 1, 3, 0), ncol = 2, byrow = TRUE))
+    )))
+  )
+  anchors_sf <- sf::st_sf(
+    name = c("a", "b"),
+    geometry = sf::st_sfc(sf::st_point(c(0.5, 0)), sf::st_point(c(3.5, 0)))
+  )
+
+  # Multirow POLYGON object
+  sk_poly <- cnt_skeleton(polys_sf, keep = 1, anchors = anchors_sf)
+  expect_equal(nrow(sk_poly), 2)
+  expect_identical(
+    sf::st_drop_geometry(sk_poly),
+    sf::st_drop_geometry(polys_sf)
+  )
+
+  # One-row MULTIPOLYGON
+  sk_multi <- cnt_skeleton(multi_sf, keep = 1, anchors = anchors_sf)
+  expect_equal(nrow(sk_multi), 2)
+  expect_identical(
+    sf::st_drop_geometry(sk_multi)[1, , drop = FALSE],
+    sf::st_drop_geometry(multi_sf)
+  )
+})
+
+test_that("straight skeleton accepts the same anchors contract", {
+  skip_if_not_installed("raybevel")
+  polygon <- geos::as_geos_geometry("POLYGON ((0 0, 4 0, 4 2, 0 2, 0 0))")
+  anchors <- geos::as_geos_geometry(c("POINT (0 1)", "POINT (4 1)"))
+  sk <- cnt_skeleton(polygon, keep = 1, method = "straight", anchors = anchors)
+  path <- expect_no_warning(cnt_path(sk, anchors[1], anchors[2]))
+  expect_equal(geos::geos_distance(geos::geos_point_start(path), anchors[1]), 0)
+  expect_equal(geos::geos_distance(geos::geos_point_end(path), anchors[2]), 0)
+  aug <- skeleton_nodes_network(sk)
+  for (i in seq_along(anchors)) {
+    d <- as.numeric(sf::st_distance(sf::st_as_sf(anchors[i]), aug$nodes))
+    expect_equal(unname(aug$degree[[which(d == 0)[[1]]]]), 1L)
+  }
+})
