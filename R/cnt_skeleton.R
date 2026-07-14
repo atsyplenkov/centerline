@@ -1,6 +1,8 @@
 #' Create a skeleton of a closed polygon object
 #'
-#' This function generates skeletons of closed polygon objects.
+#' This function generates skeletons of closed polygon objects. Optional
+#' boundary `anchors` can be attached as exact terminal graph nodes so that
+#' [cnt_path()] can start or end at those points without nearest-node snapping.
 #'
 #' @param input \code{sf}, \code{sfc}, \code{SpatVector}, or
 #' \code{geos_geometry} polygons object
@@ -9,6 +11,13 @@
 #' @param method character, either \code{"voronoi"} (default) or
 #' \code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
 #' See Details.
+#' @param anchors \code{NULL} (default) or boundary \code{POINT} geometries of
+#' the same spatial class and CRS as \code{input}. When supplied, each point
+#' must lie on exactly one polygon-part boundary (exterior or hole ring) and is
+#' attached to the ordinary skeleton by a direct interior connector. Anchors
+#' never become Voronoi sites, and ordinary skeleton branches are never pruned.
+#' Attribute columns on \code{anchors} are ignored; the returned skeleton still
+#' inherits polygon attributes exactly as without anchors.
 #'
 #' @details
 #' ## Polygon simplification/densification
@@ -45,6 +54,18 @@
 #' using the [raybevel::skeletonize()] function. See
 #' \url{https://www.tylermw.com/posts/rayverse/raybevel-introduction.html}
 #'
+#' ## Boundary anchors
+#' When \code{anchors} is supplied, the ordinary skeleton is still built from
+#' the polygon alone under the existing \code{keep} and \code{method} behavior.
+#' Each accepted boundary point is then joined to a valid interior junction by a
+#' direct connector that stays inside the polygon, meets the boundary only at
+#' that anchor, and meets the ordinary skeleton only at a pre-existing
+#' degree-at-least-three junction. Connector selection uses planar Euclidean
+#' distance and turn-angle scoring in the input coordinate space; use projected
+#' coordinates when that ranking must be spatially meaningful. Calls fail when
+#' an anchor is off-boundary, shared by multiple parts, duplicated, or has no
+#' valid direct connector.
+#'
 #' @references Voronoi, G. (1908). Nouvelles applications des paramètres
 #' continus à la théorie des formes quadratiques. Journal für die reine und
 #' angewandte Mathematik, 134, 198-287. \doi{10.1515/crll.1908.134.198}
@@ -68,7 +89,25 @@
 #' pol_skeleton <- cnt_skeleton(polygon)
 #'
 #' plot(pol_skeleton)
-cnt_skeleton <- function(input, keep = 0.5, method = "voronoi") {
+#'
+#' # Attach exact boundary terminals for routing
+#' points <- sf::st_read(
+#'   system.file("extdata/example.gpkg", package = "centerline"),
+#'   layer = "polygon_points",
+#'   quiet = TRUE
+#' )
+#' boundary <- sf::st_boundary(polygon)
+#' anchors <- points[
+#'   as.numeric(sf::st_distance(points, boundary)) == 0,
+#' ]
+#' anchored <- cnt_skeleton(polygon, keep = 1, anchors = anchors)
+#' plot(anchored)
+cnt_skeleton <- function(
+  input,
+  keep = 0.5,
+  method = "voronoi",
+  anchors = NULL
+) {
   UseMethod("cnt_skeleton")
 }
 
@@ -76,33 +115,30 @@ cnt_skeleton <- function(input, keep = 0.5, method = "voronoi") {
 cnt_skeleton.geos_geometry <- function(
   input,
   keep = 0.5,
-  method = c("voronoi", "straight")
+  method = c("voronoi", "straight"),
+  anchors = NULL
 ) {
   # Check input arguments
   stopifnot(check_polygons(input))
+  stopifnot(check_anchors(input, anchors))
   checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
   method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
   # Save CRS
   crs <- wk::wk_crs(input)
 
-  # Transform to geos_geometry
-  input_geom_type <- geos::geos_type(input)
-
-  # Check if input is of geometry type 'MULTIPOLYGON'
-  if (any(input_geom_type == "multipolygon")) {
-    input <- geos::geos_unnest(input, keep_multi = FALSE)
+  anchors_geos <- if (is.null(anchors) || length(anchors) == 0L) {
+    NULL
+  } else {
+    anchors
   }
 
-  # Find GEOS skeleton
-  if (method == "voronoi") {
-    pol_skeleton <- do.call(c, lapply(input, cnt_skeleton_geos, keep = keep))
-  } else if (method == "straight") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input, cnt_skeleton_straight, keep = keep)
-    )
-  }
+  pol_skeleton <- cnt_skeleton_geos_all(
+    input = input,
+    anchors = anchors_geos,
+    keep = keep,
+    method = method
+  )
 
   wk::wk_crs(pol_skeleton) <- crs
 
@@ -113,10 +149,12 @@ cnt_skeleton.geos_geometry <- function(
 cnt_skeleton.sf <- function(
   input,
   keep = 0.5,
-  method = c("voronoi", "straight")
+  method = c("voronoi", "straight"),
+  anchors = NULL
 ) {
   # Check input arguments
   stopifnot(check_polygons(input))
+  stopifnot(check_anchors(input, anchors))
   checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
   method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
@@ -125,25 +163,20 @@ cnt_skeleton.sf <- function(
 
   # Transform to geos_geometry
   input_geos <- geos::as_geos_geometry(input)
-  input_geom_type <- geos::geos_type(input)
-
-  # Check if input is of geometry type 'MULTIPOLYGON'
-  if (any(input_geom_type == "multipolygon")) {
-    input_geos <- geos::geos_unnest(input_geos, keep_multi = FALSE)
+  anchors_geos <- if (
+    is.null(anchors) || (inherits(anchors, "sf") && nrow(anchors) == 0L)
+  ) {
+    NULL
+  } else {
+    geos::as_geos_geometry(anchors)
   }
 
-  # Find GEOS skeleton
-  if (method == "voronoi") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input_geos, cnt_skeleton_geos, keep = keep)
-    )
-  } else if (method == "straight") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input_geos, cnt_skeleton_straight, keep = keep)
-    )
-  }
+  pol_skeleton <- cnt_skeleton_geos_all(
+    input = input_geos,
+    anchors = anchors_geos,
+    keep = keep,
+    method = method
+  )
 
   # Transform back to sf
   pol_skeleton_crs <- pol_skeleton |>
@@ -158,10 +191,12 @@ cnt_skeleton.sf <- function(
 cnt_skeleton.sfc <- function(
   input,
   keep = 0.5,
-  method = c("voronoi", "straight")
+  method = c("voronoi", "straight"),
+  anchors = NULL
 ) {
   # Check input arguments
   stopifnot(check_polygons(input))
+  stopifnot(check_anchors(input, anchors))
   checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
   method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
@@ -170,27 +205,20 @@ cnt_skeleton.sfc <- function(
 
   # Transform to geos_geometry
   input_geos <- geos::as_geos_geometry(input)
-  input_geom_type <- geos::geos_type(input)
-
-  # Check if input is of geometry type 'MULTIPOLYGON'
-  if (any(input_geom_type == "multipolygon")) {
-    input_geos <- geos::geos_unnest(input_geos, keep_multi = FALSE)
+  anchors_geos <- if (is.null(anchors) || length(anchors) == 0L) {
+    NULL
+  } else {
+    geos::as_geos_geometry(anchors)
   }
 
-  # Find GEOS skeleton
-  if (method == "voronoi") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input_geos, cnt_skeleton_geos, keep = keep)
-    )
-  } else if (method == "straight") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input_geos, cnt_skeleton_straight, keep = keep)
-    )
-  }
+  pol_skeleton <- cnt_skeleton_geos_all(
+    input = input_geos,
+    anchors = anchors_geos,
+    keep = keep,
+    method = method
+  )
 
-  # Transform back to sf
+  # Transform back to sfc
   pol_skeleton_crs <- pol_skeleton |> sf::st_as_sfc() |> sf::st_set_crs(crs)
 
   pol_skeleton_crs
@@ -200,12 +228,14 @@ cnt_skeleton.sfc <- function(
 cnt_skeleton.SpatVector <- function(
   input,
   keep = 0.5,
-  method = c("voronoi", "straight")
+  method = c("voronoi", "straight"),
+  anchors = NULL
 ) {
   check_package("terra")
 
   # Check input arguments
   stopifnot(check_polygons(input))
+  stopifnot(check_anchors(input, anchors))
   checkmate::assert_number(keep, lower = 0.05, upper = 5.0)
   method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
 
@@ -214,25 +244,18 @@ cnt_skeleton.SpatVector <- function(
 
   # Transform to GEOS geometry
   input_geos <- terra_to_geos(input)
-  input_geom_type <- geos::geos_type(input_geos)
-
-  # Check if input is of geometry type 'MULTIPOLYGON'
-  if (any(input_geom_type == "multipolygon")) {
-    input_geos <- geos::geos_unnest(input_geos, keep_multi = FALSE)
+  anchors_geos <- if (is.null(anchors) || nrow(anchors) == 0L) {
+    NULL
+  } else {
+    terra_to_geos(anchors)
   }
 
-  # Find GEOS skeleton
-  if (method == "voronoi") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input_geos, cnt_skeleton_geos, keep = keep)
-    )
-  } else if (method == "straight") {
-    pol_skeleton <- do.call(
-      c,
-      lapply(input_geos, cnt_skeleton_straight, keep = keep)
-    )
-  }
+  pol_skeleton <- cnt_skeleton_geos_all(
+    input = input_geos,
+    anchors = anchors_geos,
+    keep = keep,
+    method = method
+  )
 
   # Transform back to SpatVect
   pol_skeleton_crs <- geos_to_terra(pol_skeleton)
@@ -253,6 +276,45 @@ cnt_skeleton.SpatVector <- function(
     )
     return(pol_skeleton_crs)
   }
+}
+
+# Internal coordinator: unnest parts, generate ordinary skeletons, then
+# attach any validated boundary anchors per part.
+cnt_skeleton_geos_all <- function(
+  input,
+  anchors = NULL,
+  keep = 0.5,
+  method = c("voronoi", "straight")
+) {
+  method <- checkmate::matchArg(method, choices = c("voronoi", "straight"))
+
+  input_geom_type <- geos::geos_type(input)
+  if (any(input_geom_type == "multipolygon")) {
+    input <- geos::geos_unnest(input, keep_multi = FALSE)
+  }
+
+  membership <- match_boundary_anchors(input, anchors)
+
+  generator <- if (method == "voronoi") {
+    cnt_skeleton_geos
+  } else {
+    cnt_skeleton_straight
+  }
+
+  skeletons <- lapply(seq_along(input), function(i) {
+    sk <- generator(input[i], keep = keep)
+    part_anchor_idx <- membership[[i]]
+    if (length(part_anchor_idx) == 0L) {
+      return(sk)
+    }
+    add_boundary_anchors(
+      skeleton = sk,
+      polygon = input[i],
+      anchors = anchors[part_anchor_idx]
+    )
+  })
+
+  do.call(c, skeletons)
 }
 
 cnt_skeleton_geos <- function(input, keep = 0.5) {

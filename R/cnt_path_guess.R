@@ -12,7 +12,9 @@
 #' @param input \code{sf}, \code{sfc} or \code{SpatVector} polygons object
 #' @param skeleton \code{NULL} (default) or [centerline::cnt_skeleton()] output.
 #' If \code{NULL} then polygon's skeleton would be estimated in the background
-#' using specified parameters (see inherit params below).
+#' using specified parameters (see inherit params below). Forwarded
+#' \code{anchors} from \code{...} apply only when a skeleton is built or
+#' rebuilt; they are ignored when a valid \code{skeleton} is supplied.
 #' @param return_geos \code{FALSE} (default). A logical flag that controls
 #' whether the \code{geos_geometry} should be returned.
 #'
@@ -95,7 +97,8 @@ cnt_path_guess.sf <- function(
 
   # Find skeleton
   if (base::is.null(skeleton)) {
-    skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    skeleton_geos <- cnt_skeleton(input = input, ...) |>
+      geos::as_geos_geometry()
   } else if (inherits(skeleton, "geos_geometry")) {
     stopifnot(check_lines(skeleton))
     skeleton_geos <- skeleton
@@ -107,7 +110,8 @@ cnt_path_guess.sf <- function(
     skeleton_geos <- geos::as_geos_geometry(skeleton)
   } else {
     warning("skeleton is not of supported class, rebuilding it...")
-    skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    skeleton_geos <- cnt_skeleton(input = input, ...) |>
+      geos::as_geos_geometry()
   }
 
   # Find the longest path
@@ -144,7 +148,8 @@ cnt_path_guess.sfc <- function(
 
   # Find skeleton
   if (base::is.null(skeleton)) {
-    skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    skeleton_geos <- cnt_skeleton(input = input, ...) |>
+      geos::as_geos_geometry()
   } else if (inherits(skeleton, "geos_geometry")) {
     stopifnot(check_lines(skeleton))
     skeleton_geos <- skeleton
@@ -156,7 +161,8 @@ cnt_path_guess.sfc <- function(
     skeleton_geos <- geos::as_geos_geometry(skeleton)
   } else {
     warning("skeleton is not of supported class, rebuilding it...")
-    skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    skeleton_geos <- cnt_skeleton(input = input, ...) |>
+      geos::as_geos_geometry()
   }
 
   # Find the longest path
@@ -193,7 +199,7 @@ cnt_path_guess.SpatVector <- function(
 
   # Find skeleton
   if (base::is.null(skeleton)) {
-    skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    skeleton_geos <- cnt_skeleton(input = input, ...) |> terra_to_geos()
   } else if (inherits(skeleton, "geos_geometry")) {
     stopifnot(check_lines(skeleton))
     skeleton_geos <- skeleton
@@ -205,7 +211,7 @@ cnt_path_guess.SpatVector <- function(
     skeleton_geos <- geos::as_geos_geometry(skeleton)
   } else {
     warning("skeleton is not of supported class, rebuilding it...")
-    skeleton_geos <- cnt_skeleton(input = input_geos, ...)
+    skeleton_geos <- cnt_skeleton(input = input, ...) |> terra_to_geos()
   }
 
   # Find the longest path

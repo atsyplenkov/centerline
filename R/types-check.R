@@ -106,3 +106,86 @@ check_points <- function(input) {
   # If checks pass
   return(TRUE)
 }
+
+# Validate optional boundary anchors for cnt_skeleton()
+check_anchors <- function(input, anchors) {
+  if (is.null(anchors)) {
+    return(TRUE)
+  }
+
+  n_anchors <- if (inherits(anchors, "SpatVector") || inherits(anchors, "sf")) {
+    nrow(anchors)
+  } else {
+    length(anchors)
+  }
+  if (n_anchors == 0L) {
+    return(TRUE)
+  }
+
+  input_family <- spatial_container_family(input)
+  anchors_family <- spatial_container_family(anchors)
+  if (
+    is.na(input_family) ||
+      is.na(anchors_family) ||
+      input_family != anchors_family
+  ) {
+    stop("anchors must use the same spatial class as input")
+  }
+
+  tryCatch(stopifnot(check_points(anchors)), error = function(e) {
+    stop("anchors must contain non-empty POINT geometries")
+  })
+
+  if (input_family == "geos_geometry") {
+    if (!wk::wk_crs_equal(wk::wk_crs(input), wk::wk_crs(anchors))) {
+      stop("anchors and input must use the same CRS")
+    }
+    anchors_geos <- anchors
+  } else if (input_family == "sf" || input_family == "sfc") {
+    if (sf::st_crs(input) != sf::st_crs(anchors)) {
+      stop("anchors and input must use the same CRS")
+    }
+    anchors_geos <- geos::as_geos_geometry(anchors)
+  } else {
+    if (!terra::same.crs(input, anchors)) {
+      stop("anchors and input must use the same CRS")
+    }
+    anchors_geos <- terra_to_geos(anchors)
+  }
+
+  if (anyNA(anchors_geos) || any(geos::geos_is_empty(anchors_geos))) {
+    stop("anchors must contain non-empty POINT geometries")
+  }
+
+  equals_hits <- geos::geos_equals_matrix(
+    anchors_geos,
+    geos::geos_strtree(anchors_geos)
+  )
+  has_duplicate <- any(vapply(
+    seq_along(equals_hits),
+    function(i) {
+      any(equals_hits[[i]] != i)
+    },
+    logical(1),
+    USE.NAMES = FALSE
+  ))
+  if (has_duplicate) {
+    stop("anchors must not contain duplicate points")
+  }
+
+  TRUE
+}
+
+spatial_container_family <- function(x) {
+  if (inherits(x, "SpatVector")) {
+    "SpatVector"
+  } else if (inherits(x, "sf")) {
+    "sf"
+  } else if (inherits(x, "sfc")) {
+    "sfc"
+  } else if (inherits(x, "geos_geometry")) {
+    "geos_geometry"
+  } else {
+    NA_character_
+  }
+}
