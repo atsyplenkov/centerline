@@ -273,6 +273,7 @@ cnt_skeleton_geos <- function(input, keep = 0.5) {
 
   # Find polygon skeleton
   pol_skeleton <- pol_geos |>
+    geos::geos_unique_points() |>
     geos::geos_voronoi_edges() |>
     geos::geos_intersection(pol_geos) |>
     geos::geos_unnest(keep_multi = FALSE) |>
