@@ -1,4 +1,13 @@
-centerline 0.2.5 (2025-03-12)
+centerline 0.3.0 (unreleased)
+=========================
+
+### NEW FEATURES
+
+  * `cnt_skeleton(anchors = ...)` attaches exact boundary terminals so
+    `cnt_path()` can start and end at supplied boundary points with zero
+    endpoint distance.
+
+centerline 0.2.5 (2026-03-12)
 =========================
 
 ### UPDATES
