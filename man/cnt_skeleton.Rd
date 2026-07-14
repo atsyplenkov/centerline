@@ -4,7 +4,7 @@
 \alias{cnt_skeleton}
 \title{Create a skeleton of a closed polygon object}
 \usage{
-cnt_skeleton(input, keep = 0.5, method = "voronoi")
+cnt_skeleton(input, keep = 0.5, method = "voronoi", anchors = NULL)
 }
 \arguments{
 \item{input}{\code{sf}, \code{sfc}, \code{SpatVector}, or
@@ -16,13 +16,23 @@ See Details.}
 \item{method}{character, either \code{"voronoi"} (default) or
 \code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
 See Details.}
+
+\item{anchors}{\code{NULL} (default) or boundary \code{POINT} geometries of
+the same spatial class and CRS as \code{input}. When supplied, each point
+must lie on exactly one polygon-part boundary (exterior or hole ring) and is
+attached to the ordinary skeleton by a direct interior connector. Anchors
+never become Voronoi sites, and ordinary skeleton branches are never pruned.
+Attribute columns on \code{anchors} are ignored; the returned skeleton still
+inherits polygon attributes exactly as without anchors.}
 }
 \value{
 a \code{sf}, \code{sfc}, \code{SpatVector}
 or \code{geos_geometry} class object of a \code{MULTILINESTRING} geometry
 }
 \description{
-This function generates skeletons of closed polygon objects.
+This function generates skeletons of closed polygon objects. Optional
+boundary \code{anchors} can be attached as exact terminal graph nodes so that
+\code{\link[=cnt_path]{cnt_path()}} can start or end at those points without nearest-node snapping.
 }
 \details{
 \subsection{Polygon simplification/densification}{
@@ -61,6 +71,20 @@ using the \code{\link[raybevel:skeletonize]{raybevel::skeletonize()}} function. 
 \url{https://www.tylermw.com/posts/rayverse/raybevel-introduction.html}
 }
 }
+
+\subsection{Boundary anchors}{
+
+When \code{anchors} is supplied, the ordinary skeleton is still built from
+the polygon alone under the existing \code{keep} and \code{method} behavior.
+Each accepted boundary point is then joined to a valid interior junction by a
+direct connector that stays inside the polygon, meets the boundary only at
+that anchor, and meets the ordinary skeleton only at a pre-existing
+degree-at-least-three junction. Connector selection uses planar Euclidean
+distance and turn-angle scoring in the input coordinate space; use projected
+coordinates when that ranking must be spatially meaningful. Calls fail when
+an anchor is off-boundary, shared by multiple parts, duplicated, or has no
+valid direct connector.
+}
 }
 \examples{
 library(sf)
@@ -76,6 +100,19 @@ plot(polygon)
 pol_skeleton <- cnt_skeleton(polygon)
 
 plot(pol_skeleton)
+
+# Attach exact boundary terminals for routing
+points <- sf::st_read(
+  system.file("extdata/example.gpkg", package = "centerline"),
+  layer = "polygon_points",
+  quiet = TRUE
+)
+boundary <- sf::st_boundary(polygon)
+anchors <- points[
+  as.numeric(sf::st_distance(points, boundary)) == 0,
+]
+anchored <- cnt_skeleton(polygon, keep = 1, anchors = anchors)
+plot(anchored)
 }
 \references{
 Voronoi, G. (1908). Nouvelles applications des paramètres

@@ -11,7 +11,9 @@ cnt_path_guess(input, skeleton = NULL, return_geos = FALSE, ...)
 
 \item{skeleton}{\code{NULL} (default) or \code{\link[=cnt_skeleton]{cnt_skeleton()}} output.
 If \code{NULL} then polygon's skeleton would be estimated in the background
-using specified parameters (see inherit params below).}
+using specified parameters (see inherit params below). Forwarded
+\code{anchors} from \code{...} apply only when a skeleton is built or
+rebuilt; they are ignored when a valid \code{skeleton} is supplied.}
 
 \item{return_geos}{\code{FALSE} (default). A logical flag that controls
 whether the \code{geos_geometry} should be returned.}
@@ -24,6 +26,13 @@ See Details.}
     \item{\code{method}}{character, either \code{"voronoi"} (default) or
 \code{"straight"}, or just the first letter \code{"v"} or \code{"s"}.
 See Details.}
+    \item{\code{anchors}}{\code{NULL} (default) or boundary \code{POINT} geometries of
+the same spatial class and CRS as \code{input}. When supplied, each point
+must lie on exactly one polygon-part boundary (exterior or hole ring) and is
+attached to the ordinary skeleton by a direct interior connector. Anchors
+never become Voronoi sites, and ordinary skeleton branches are never pruned.
+Attribute columns on \code{anchors} are ignored; the returned skeleton still
+inherits polygon attributes exactly as without anchors.}
   }}
 }
 \value{

@@ -35,14 +35,18 @@ Neither starting nor ending points are required to be located
 on the edges of a polygon (i.e., snapped to the boundary);
 they can be positioned wherever possible inside the polygon.
 
-The algorithm identifies the closest nodes of the polygon's skeleton
-to the starting and ending points and then connects them
-using the shortest path possible along the skeleton.
-Therefore, if more precise placement of start and end
-points is necessary, consider executing the \code{\link[=cnt_skeleton]{cnt_skeleton()}}
-function with the \code{keep = 1} option. In doing so, the resulting
+By default, the algorithm identifies the closest nodes of the polygon's
+skeleton to the starting and ending points and then connects them using the
+shortest path possible along the skeleton. Therefore, if more precise
+placement of start and end points is necessary, consider executing
+\code{\link[=cnt_skeleton]{cnt_skeleton()}} with \code{keep = 1}. In doing so, the resulting
 skeleton may be more detailed, increasing the likelihood that the starting
 and ending points are already situated on the skeleton paths.
+
+For exact boundary terminals, pass the same boundary points to
+\code{\link[=cnt_skeleton]{cnt_skeleton()}} as \code{anchors}. Those anchors become degree-one graph
+nodes, so \code{\link[=cnt_path]{cnt_path()}} returns zero endpoint distance from the supplied
+points rather than nearest-node snaps.
 }
 \examples{
 library(sf)
@@ -67,13 +71,23 @@ points <-
 # Find polygon's skeleton
 pol_skeleton <- cnt_skeleton(polygon)
 
-# Connect points
+# Connect points (nearest-node snapping)
 pol_path <-
   cnt_path(
     skeleton = pol_skeleton,
     start_point = points[2],
     end_point = points[1]
   )
+
+# Exact boundary terminals via anchors
+boundary <- geos::geos_boundary(polygon)
+is_boundary <- geos::geos_equals(
+  geos::geos_intersection(boundary, points),
+  points
+)
+anchors <- points[is_boundary]
+anchored_skeleton <- cnt_skeleton(polygon, keep = 1, anchors = anchors)
+anchored_path <- cnt_path(anchored_skeleton, anchors[1], anchors[2])
 
 # Plot
 plot(polygon)
