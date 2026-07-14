@@ -16,3 +16,6 @@
 ^dev.R$
 ^codemeta\.json$
 ^Rplot\.pdf$
+^jarl.toml$
+^air.toml$
+^justfile$
