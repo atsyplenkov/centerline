@@ -28,9 +28,15 @@ See Details.}
 See Details.}
     \item{\code{anchors}}{\code{NULL} (default) or boundary \code{POINT} geometries of
 the same spatial class and CRS as \code{input}. When supplied, each point
-must lie on exactly one polygon-part boundary (exterior or hole ring) and is
-attached to the ordinary skeleton by a direct interior connector. Anchors
-never become Voronoi sites, and ordinary skeleton branches are never pruned.
+must lie on exactly one polygon-part boundary (exterior or hole ring). With
+\code{method = "voronoi"} and \code{keep < 1}, accepted anchors are injected
+as exact exterior/hole ring vertices before protected simplification so they
+participate in \code{geos_unique_points()} as Voronoi sites (the achieved
+vertex count may exceed the nominal \code{keep} density). Connector
+validation and clipping then use that prepared polygon. With
+\code{keep >= 1}, anchors are not injected and the ordinary no-op or densify
+site set is retained. In all cases anchors are also attached by a direct
+interior connector so they remain explicit degree-one graph terminals.
 Attribute columns on \code{anchors} are ignored; the returned skeleton still
 inherits polygon attributes exactly as without anchors.}
   }}

@@ -19,9 +19,15 @@ See Details.}
 
 \item{anchors}{\code{NULL} (default) or boundary \code{POINT} geometries of
 the same spatial class and CRS as \code{input}. When supplied, each point
-must lie on exactly one polygon-part boundary (exterior or hole ring) and is
-attached to the ordinary skeleton by a direct interior connector. Anchors
-never become Voronoi sites, and ordinary skeleton branches are never pruned.
+must lie on exactly one polygon-part boundary (exterior or hole ring). With
+\code{method = "voronoi"} and \code{keep < 1}, accepted anchors are injected
+as exact exterior/hole ring vertices before protected simplification so they
+participate in \code{geos_unique_points()} as Voronoi sites (the achieved
+vertex count may exceed the nominal \code{keep} density). Connector
+validation and clipping then use that prepared polygon. With
+\code{keep >= 1}, anchors are not injected and the ordinary no-op or densify
+site set is retained. In all cases anchors are also attached by a direct
+interior connector so they remain explicit degree-one graph terminals.
 Attribute columns on \code{anchors} are ignored; the returned skeleton still
 inherits polygon attributes exactly as without anchors.}
 }
@@ -74,16 +80,23 @@ using the \code{\link[raybevel:skeletonize]{raybevel::skeletonize()}} function. 
 
 \subsection{Boundary anchors}{
 
-When \code{anchors} is supplied, the ordinary skeleton is still built from
-the polygon alone under the existing \code{keep} and \code{method} behavior.
-Each accepted boundary point is then joined to a valid interior junction by a
-direct connector that stays inside the polygon, meets the boundary only at
-that anchor, and meets the ordinary skeleton only at a pre-existing
-degree-at-least-three junction. Connector selection uses planar Euclidean
-distance and turn-angle scoring in the input coordinate space; use projected
-coordinates when that ranking must be spatially meaningful. Calls fail when
-an anchor is off-boundary, shared by multiple parts, duplicated, or has no
-valid direct connector.
+When \code{anchors} is supplied, each accepted boundary point is matched to
+the original unnested polygon-part boundary first. For
+\code{method = "voronoi"} and \code{keep < 1}, those anchors are then
+injected as exact ring vertices and the polygon is simplified with those
+vertices protected, so Voronoi generation, clipping, coverage tests, and
+connector construction all share one prepared domain. With
+\code{keep >= 1}, or with \code{method = "straight"}, the ordinary skeleton
+is still built from the (uninjected) polygon under the existing
+\code{keep}/\code{method} behavior and anchors attach only by connector.
+Candidate junctions are scored among the nearest skeleton junctions (by
+planar Euclidean distance and turn angle; use projected coordinates when
+that ranking must be spatially meaningful). A full chord to a pre-existing
+degree-at-least-three junction is preferred; if every such chord crosses
+other skeleton branches, the connector is clipped to the first skeleton hit
+along the same ray (mid-edge T-junction). Calls fail when an anchor is
+off-boundary, shared by multiple parts, duplicated, or has no valid
+connector.
 }
 }
 \examples{
