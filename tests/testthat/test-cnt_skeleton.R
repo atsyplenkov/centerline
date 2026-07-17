@@ -286,22 +286,13 @@ anchor_grid_size <- function(polygon) {
   sqrt((bbox$xmax - bbox$xmin)^2 + (bbox$ymax - bbox$ymin)^2) * 1e-7
 }
 
-skeleton_nodes_network <- function(skeleton) {
-  lines <- skeleton |>
-    geos::geos_node() |>
-    geos::geos_unnest(keep_multi = FALSE) |>
-    sf::st_as_sf()
-  net <- sfnetworks::as_sfnetwork(
-    lines,
-    directed = FALSE,
-    edges_as_lines = TRUE
-  )
-  nodes <- sfnetworks::activate(net, "nodes") |> sf::st_as_sf()
+skeleton_graph_info <- function(skeleton) {
+  g <- skeleton_graph_build(skeleton, crs = wk::wk_crs(skeleton))
   list(
-    network = net,
-    nodes = nodes,
-    degree = igraph::degree(net),
-    xy = sf::st_coordinates(nodes)
+    graph = g,
+    nodes = skeleton_graph_node_points(g),
+    degree = skeleton_graph_degree(g),
+    xy = cbind(g$nodes$x, g$nodes$y)
   )
 }
 
@@ -310,22 +301,19 @@ test_that("boundary anchors attach approved junctions on example.gpkg", {
   polygon <- data$polygon
   anchors <- data$anchors
   ordinary <- cnt_skeleton(polygon, keep = 1)
-  ordinary_net <- skeleton_nodes_network(ordinary)
+  ordinary_net <- skeleton_graph_info(ordinary)
   grid_size <- anchor_grid_size(polygon)
 
   # Pre-augmentation: anchors are not ordinary skeleton nodes.
   for (i in seq_along(anchors)) {
-    d <- as.numeric(sf::st_distance(
-      sf::st_as_sf(anchors[i]),
-      ordinary_net$nodes
-    ))
+    d <- as.numeric(geos::geos_distance(anchors[i], ordinary_net$nodes))
     expect_true(all(d > 0))
   }
 
   anchored <- cnt_skeleton(polygon, keep = 1, anchors = anchors)
   expect_true(geos::geos_covers(anchored, ordinary))
 
-  aug <- skeleton_nodes_network(anchored)
+  aug <- skeleton_graph_info(anchored)
   approved <- list(
     c(1830873.1875, 5453788.018333333),
     c(1830873.699999998, 5453778.95)
@@ -334,12 +322,12 @@ test_that("boundary anchors attach approved junctions on example.gpkg", {
   boundary <- geos::geos_boundary(polygon)
 
   for (i in seq_along(anchors)) {
-    d <- as.numeric(sf::st_distance(sf::st_as_sf(anchors[i]), aug$nodes))
+    d <- as.numeric(geos::geos_distance(anchors[i], aug$nodes))
     zero_ids <- which(d == 0)
     expect_equal(length(zero_ids), 1L)
     expect_equal(unname(aug$degree[[zero_ids[[1]]]]), 1L)
 
-    nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+    nbrs <- skeleton_graph_neighbors(aug$graph, zero_ids[[1]])
     expect_equal(length(nbrs), 1L)
     expect_true(aug$degree[[nbrs[[1]]]] >= 3L)
     target_xy <- aug$xy[nbrs[[1]], 1:2]
@@ -425,23 +413,20 @@ test_that("boundary anchors scale with relative precision grid", {
   for (scale in c(1e-6, 1e6)) {
     pair <- scale_pair(scale)
     ordinary <- cnt_skeleton(pair$polygon, keep = 1)
-    ordinary_net <- skeleton_nodes_network(ordinary)
+    ordinary_net <- skeleton_graph_info(ordinary)
     for (i in seq_along(pair$anchors)) {
-      d <- as.numeric(sf::st_distance(
-        sf::st_as_sf(pair$anchors[i]),
-        ordinary_net$nodes
-      ))
+      d <- as.numeric(geos::geos_distance(pair$anchors[i], ordinary_net$nodes))
       expect_true(all(d > 0))
     }
     anchored <- cnt_skeleton(pair$polygon, keep = 1, anchors = pair$anchors)
-    aug <- skeleton_nodes_network(anchored)
+    aug <- skeleton_graph_info(anchored)
     targets <- list()
     for (i in seq_along(pair$anchors)) {
-      d <- as.numeric(sf::st_distance(sf::st_as_sf(pair$anchors[i]), aug$nodes))
+      d <- as.numeric(geos::geos_distance(pair$anchors[i], aug$nodes))
       zero_ids <- which(d == 0)
       expect_equal(length(zero_ids), 1L)
       expect_equal(unname(aug$degree[[zero_ids[[1]]]]), 1L)
-      nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+      nbrs <- skeleton_graph_neighbors(aug$graph, zero_ids[[1]])
       targets[[i]] <- aug$xy[nbrs[[1]], 1:2]
     }
     # normalized junction choice: same relative offset order
@@ -577,11 +562,11 @@ test_that("add_boundary_anchors rejects concavity-crossing chords", {
     anchor
   ))
 
-  aug <- skeleton_nodes_network(augmented)
-  d <- as.numeric(sf::st_distance(sf::st_as_sf(anchor), aug$nodes))
+  aug <- skeleton_graph_info(augmented)
+  d <- as.numeric(geos::geos_distance(anchor, aug$nodes))
   zero_ids <- which(d == 0)
   expect_equal(length(zero_ids), 1L)
-  nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+  nbrs <- skeleton_graph_neighbors(aug$graph, zero_ids[[1]])
   target <- aug$xy[nbrs[[1]], 1:2]
   expect_equal(target[[1]], 0.5, tolerance = 1e-9)
   expect_equal(target[[2]], 0.5, tolerance = 1e-9)
@@ -603,10 +588,10 @@ test_that("add_boundary_anchors rejects early skeleton crossings", {
   anchor <- geos::as_geos_geometry("POINT (0 5)")
   augmented <- add_boundary_anchors(skeleton, polygon, anchor)
 
-  aug <- skeleton_nodes_network(augmented)
-  d <- as.numeric(sf::st_distance(sf::st_as_sf(anchor), aug$nodes))
+  aug <- skeleton_graph_info(augmented)
+  d <- as.numeric(geos::geos_distance(anchor, aug$nodes))
   zero_ids <- which(d == 0)
-  nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+  nbrs <- skeleton_graph_neighbors(aug$graph, zero_ids[[1]])
   target <- aug$xy[nbrs[[1]], 1:2]
   expect_equal(target[[1]], 8, tolerance = 1e-9)
   expect_equal(target[[2]], 8, tolerance = 1e-9)
@@ -639,12 +624,12 @@ test_that("add_boundary_anchors falls back to first skeleton hit", {
   augmented <- add_boundary_anchors(skeleton, polygon, anchor)
 
   expect_true(geos::geos_covers(augmented, skeleton))
-  aug <- skeleton_nodes_network(augmented)
-  d <- as.numeric(sf::st_distance(sf::st_as_sf(anchor), aug$nodes))
+  aug <- skeleton_graph_info(augmented)
+  d <- as.numeric(geos::geos_distance(anchor, aug$nodes))
   zero_ids <- which(d == 0)
   expect_equal(length(zero_ids), 1L)
   expect_equal(unname(aug$degree[[zero_ids[[1]]]]), 1L)
-  nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+  nbrs <- skeleton_graph_neighbors(aug$graph, zero_ids[[1]])
   expect_equal(length(nbrs), 1L)
   target <- aug$xy[nbrs[[1]], 1:2]
   # First hit is the blocking segment at x = 1, y = 5.
@@ -701,9 +686,9 @@ test_that("straight skeleton accepts the same anchors contract", {
   path <- expect_no_warning(cnt_path(sk, anchors[1], anchors[2]))
   expect_equal(geos::geos_distance(geos::geos_point_start(path), anchors[1]), 0)
   expect_equal(geos::geos_distance(geos::geos_point_end(path), anchors[2]), 0)
-  aug <- skeleton_nodes_network(sk)
+  aug <- skeleton_graph_info(sk)
   for (i in seq_along(anchors)) {
-    d <- as.numeric(sf::st_distance(sf::st_as_sf(anchors[i]), aug$nodes))
+    d <- as.numeric(geos::geos_distance(anchors[i], aug$nodes))
     expect_equal(unname(aug$degree[[which(d == 0)[[1]]]]), 1L)
   }
 })
@@ -901,4 +886,38 @@ test_that("voronoi anchors at keep < 1 yield zero-distance cnt_path ends", {
   path <- expect_no_warning(cnt_path(skeleton, anchors[1], anchors[2]))
   expect_equal(geos::geos_distance(geos::geos_point_start(path), anchors[1]), 0)
   expect_equal(geos::geos_distance(geos::geos_point_end(path), anchors[2]), 0)
+})
+
+
+test_that("ordinary and anchored skeletons match graph-migration baseline", {
+  baseline <- readRDS(test_path("fixtures/graph-migration-baseline.rds"))
+  f <- system.file("extdata/example.gpkg", package = "centerline")
+  p <- geos::as_geos_geometry(sf::st_read(f, layer = "polygon", quiet = TRUE))
+  pts <- geos::as_geos_geometry(
+    sf::st_read(f, layer = "polygon_points", quiet = TRUE)
+  )
+  b <- geos::geos_boundary(p)
+  a <- pts[geos::geos_equals(geos::geos_intersection(b, pts), pts)][1:2]
+
+  ordinary <- cnt_skeleton(p, keep = 1)
+  anchored <- cnt_skeleton(p, keep = 1, anchors = a)
+
+  for (item in list(
+    list(ordinary, baseline$ordinary_skeleton_wkb, baseline$lengths[["ordinary_skeleton"]]),
+    list(anchored, baseline$anchored_skeleton_wkb, baseline$lengths[["anchored_skeleton"]])
+  )) {
+    actual <- item[[1]]
+    base_len <- item[[3]]
+    tol <- max(1e-3, 1e-6 * base_len)
+    expect_equal(as.numeric(geos::geos_length(actual)), base_len, tolerance = tol)
+    base_geom <- geos::as_geos_geometry(item[[2]])
+    equal_exact <- tryCatch(
+      isTRUE(geos::geos_equals_exact(actual, base_geom, tol)),
+      error = function(e) FALSE
+    )
+    if (!equal_exact) {
+      hd <- as.numeric(geos::geos_distance_hausdorff(actual, base_geom))
+      expect_lte(hd, tol)
+    }
+  }
 })
