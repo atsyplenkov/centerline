@@ -13,9 +13,15 @@
 #' See Details.
 #' @param anchors \code{NULL} (default) or boundary \code{POINT} geometries of
 #' the same spatial class and CRS as \code{input}. When supplied, each point
-#' must lie on exactly one polygon-part boundary (exterior or hole ring) and is
-#' attached to the ordinary skeleton by a direct interior connector. Anchors
-#' never become Voronoi sites, and ordinary skeleton branches are never pruned.
+#' must lie on exactly one polygon-part boundary (exterior or hole ring). With
+#' \code{method = "voronoi"} and \code{keep < 1}, accepted anchors are injected
+#' as exact exterior/hole ring vertices before protected simplification so they
+#' participate in \code{geos_unique_points()} as Voronoi sites (the achieved
+#' vertex count may exceed the nominal \code{keep} density). Connector
+#' validation and clipping then use that prepared polygon. With
+#' \code{keep >= 1}, anchors are not injected and the ordinary no-op or densify
+#' site set is retained. In all cases anchors are also attached by a direct
+#' interior connector so they remain explicit degree-one graph terminals.
 #' Attribute columns on \code{anchors} are ignored; the returned skeleton still
 #' inherits polygon attributes exactly as without anchors.
 #'
@@ -55,10 +61,15 @@
 #' \url{https://www.tylermw.com/posts/rayverse/raybevel-introduction.html}
 #'
 #' ## Boundary anchors
-#' When \code{anchors} is supplied, the ordinary skeleton is still built from
-#' the polygon alone under the existing \code{keep} and \code{method} behavior.
-#' Each accepted boundary point is joined by a direct interior connector that
-#' stays inside the polygon and meets the boundary only at that anchor.
+#' When \code{anchors} is supplied, each accepted boundary point is matched to
+#' the original unnested polygon-part boundary first. For
+#' \code{method = "voronoi"} and \code{keep < 1}, those anchors are then
+#' injected as exact ring vertices and the polygon is simplified with those
+#' vertices protected, so Voronoi generation, clipping, coverage tests, and
+#' connector construction all share one prepared domain. With
+#' \code{keep >= 1}, or with \code{method = "straight"}, the ordinary skeleton
+#' is still built from the (uninjected) polygon under the existing
+#' \code{keep}/\code{method} behavior and anchors attach only by connector.
 #' Candidate junctions are scored among the nearest skeleton junctions (by
 #' planar Euclidean distance and turn angle; use projected coordinates when
 #' that ranking must be spatially meaningful). A full chord to a pre-existing
@@ -280,8 +291,9 @@ cnt_skeleton.SpatVector <- function(
   }
 }
 
-# Internal coordinator: unnest parts, generate ordinary skeletons, then
-# attach any validated boundary anchors per part.
+# Internal coordinator: unnest parts, prepare the Voronoi domain once per
+# part, generate ordinary skeletons, then attach any validated boundary
+# anchors on that same prepared polygon.
 cnt_skeleton_geos_all <- function(
   input,
   anchors = NULL,
@@ -295,56 +307,78 @@ cnt_skeleton_geos_all <- function(
     input <- geos::geos_unnest(input, keep_multi = FALSE)
   }
 
+  # Membership against original unnested parts (before preparation).
   membership <- match_boundary_anchors(input, anchors)
 
-  generator <- if (method == "voronoi") {
-    cnt_skeleton_geos
-  } else {
-    cnt_skeleton_straight
-  }
-
   skeletons <- lapply(seq_along(input), function(i) {
-    sk <- generator(input[i], keep = keep)
     part_anchor_idx <- membership[[i]]
-    if (length(part_anchor_idx) == 0L) {
-      return(sk)
+    part_anchors <- if (length(part_anchor_idx) == 0L) {
+      NULL
+    } else {
+      anchors[part_anchor_idx]
     }
-    add_boundary_anchors(
-      skeleton = sk,
-      polygon = input[i],
-      anchors = anchors[part_anchor_idx]
-    )
+
+    if (method == "voronoi") {
+      protect <- if (!is.null(part_anchors) && keep < 1) {
+        part_anchors
+      } else {
+        NULL
+      }
+      polygon_i <- prepare_polygon_for_skeleton(
+        input[i],
+        keep = keep,
+        protect = protect
+      )
+      sk <- cnt_skeleton_voronoi(polygon_i)
+      if (is.null(part_anchors)) {
+        return(sk)
+      }
+      add_boundary_anchors(
+        skeleton = sk,
+        polygon = polygon_i,
+        anchors = part_anchors
+      )
+    } else {
+      sk <- cnt_skeleton_straight(input[i], keep = keep)
+      if (is.null(part_anchors)) {
+        return(sk)
+      }
+      add_boundary_anchors(
+        skeleton = sk,
+        polygon = input[i],
+        anchors = part_anchors
+      )
+    }
   })
 
   do.call(c, skeletons)
 }
 
-cnt_skeleton_geos <- function(input, keep = 0.5) {
-  # Simplify or densify or do nothing
+# Prepare one polygon part for skeleton generation. Anchored Voronoi
+# simplification (keep < 1 with protect) uses protected DP; all other
+# branches retain the existing simplify / densify / no-op geometry.
+prepare_polygon_for_skeleton <- function(input, keep = 0.5, protect = NULL) {
   if (keep == 1) {
-    pol_geos <- input
-  } else if (keep < 1 && keep >= 0.05) {
-    # Simplify
-    pol_geos <- geos_ms_simplify(input, keep = keep)
-  } else if (keep < 0.05) {
-    # Simplify at lower bound, otherwise result
-    # might be poor
-    pol_geos <- geos_ms_simplify(input, keep = 0.05)
-  } else {
-    # Densify
-    pol_geos <- geos_ms_densify(input, keep = keep)
+    return(input)
   }
+  if (keep < 1) {
+    if (is.null(protect) || length(protect) == 0L) {
+      return(geos_ms_simplify(input, keep = max(keep, 0.05)))
+    }
+    return(geos_simplify_preserve_points(input, protect, keep))
+  }
+  geos_ms_densify(input, keep)
+}
 
-  # Find polygon skeleton
-  pol_skeleton <- pol_geos |>
+# Voronoi skeleton from an already-prepared polygon domain.
+cnt_skeleton_voronoi <- function(polygon) {
+  polygon |>
     geos::geos_unique_points() |>
     geos::geos_voronoi_edges() |>
-    geos::geos_intersection(pol_geos) |>
+    geos::geos_intersection(polygon) |>
     geos::geos_unnest(keep_multi = FALSE) |>
     geos::geos_make_collection() |>
     geos::geos_line_merge()
-
-  pol_skeleton
 }
 
 cnt_skeleton_straight <- function(input, keep = 0.5) {

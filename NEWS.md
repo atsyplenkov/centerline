@@ -5,7 +5,8 @@ centerline 0.3.0 (unreleased)
 
   * `cnt_skeleton(anchors = ...)` attaches exact boundary terminals so
     `cnt_path()` can start and end at supplied boundary points with zero
-    endpoint distance.
+    endpoint distance. Voronoi anchors are preserved as exact ring vertices
+    under simplification (`keep < 1`).
 
 centerline 0.2.5 (2026-03-12)
 =========================
