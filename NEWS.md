@@ -8,6 +8,11 @@ centerline 0.3.0 (unreleased)
     endpoint distance. Voronoi anchors are preserved as exact ring vertices
     under simplification (`keep < 1`).
 
+### Bug fixes
+
+  * `cnt_path()` now reports when start and end points cannot be connected
+    through the skeleton graph instead of passing an empty path to GEOS.
+
 centerline 0.2.5 (2026-03-12)
 =========================
 

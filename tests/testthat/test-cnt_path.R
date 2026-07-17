@@ -306,6 +306,56 @@ test_that("cnt_path errors on incorrect input classes", {
   ))
 })
 
+test_that("cnt_path reports unreachable skeleton paths", {
+  skeleton <- geos::as_geos_geometry("MULTILINESTRING ((0 0, 2 0), (0 1, 2 1))")
+  start <- geos::as_geos_geometry("POINT (0 0)")
+  end <- geos::as_geos_geometry("POINT (0 1)")
+
+  error <- expect_no_warning(tryCatch(
+    cnt_path(skeleton, start, end),
+    error = identity
+  ))
+  expect_s3_class(error, "error")
+  expect_identical(
+    conditionMessage(error),
+    paste0(
+      "Start and end points are not connected by the skeleton graph ",
+      "(nearest nodes lie in different connected components or path is empty)."
+    )
+  )
+
+  starts <- c(
+    geos::as_geos_geometry("POINT (2 0)"),
+    geos::as_geos_geometry("POINT (0 1)")
+  )
+  multi_error <- expect_no_warning(tryCatch(
+    cnt_path(skeleton, starts, start),
+    error = identity
+  ))
+  expect_s3_class(multi_error, "error")
+  expect_identical(
+    conditionMessage(multi_error),
+    paste0(
+      "Start and end points are not connected by the skeleton graph ",
+      "(nearest nodes lie in different connected components or path is empty).",
+      " Failed start indices: 2."
+    )
+  )
+})
+
+test_that("cnt_path returns an oriented linestring on a connected skeleton", {
+  skeleton <- geos::as_geos_geometry(
+    "MULTILINESTRING ((0 0, 1 0), (1 0, 1 1), (1 1, 0 1))"
+  )
+  start <- geos::as_geos_geometry("POINT (0 0)")
+  end <- geos::as_geos_geometry("POINT (0 1)")
+
+  path <- expect_no_warning(cnt_path(skeleton, start, end))
+  expect_identical(geos::geos_type(path), "linestring")
+  expect_equal(geos::geos_distance(geos::geos_point_start(path), start), 0)
+  expect_equal(geos::geos_distance(geos::geos_point_end(path), end), 0)
+})
+
 test_that("cnt_path returns exact ordered endpoints for anchored skeletons", {
   polygon_sf <- sf::st_read(
     system.file("extdata/example.gpkg", package = "centerline"),

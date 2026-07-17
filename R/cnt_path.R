@@ -32,6 +32,12 @@
 #' nodes, so [cnt_path()] returns zero endpoint distance from the supplied
 #' points rather than nearest-node snaps.
 #'
+#' Every start point's nearest skeleton node must be connected to the end
+#' point's nearest node. Using \code{anchors} in [cnt_skeleton()] ensures that
+#' terminal nodes exist, but it does not make a multi-component skeleton
+#' globally connected. If any requested route is empty, [cnt_path()] stops
+#' without returning partial paths.
+#'
 #' @return a list of \code{sf}, \code{sfc}, \code{SpatVector}
 #' or \code{geos_geometry} class objects of a \code{LINESTRING} geometry
 #'
@@ -195,12 +201,29 @@ cnt_path_master <- function(skeleton_sf, start_point_sf, end_point_sf) {
   stopifnot("Only one end point is allowed" = length(end_nodes) == 1)
 
   # Find the shortest path between two points
-  paths <- sfnetworks::st_network_paths(
+  paths <- base::suppressWarnings(sfnetworks::st_network_paths(
     pol_network,
     from = end_nodes,
     to = start_nodes,
     weights = "weight"
-  )
+  ))
+
+  failed_start_indices <- which(lengths(paths$edge_paths) == 0L)
+  if (length(failed_start_indices) > 0L) {
+    if (length(start_nodes) > 1L) {
+      stop(
+        "Start and end points are not connected by the skeleton graph ",
+        "(nearest nodes lie in different connected components or path is empty).",
+        " Failed start indices: ",
+        paste(failed_start_indices, collapse = ", "),
+        "."
+      )
+    }
+    stop(
+      "Start and end points are not connected by the skeleton graph ",
+      "(nearest nodes lie in different connected components or path is empty)."
+    )
+  }
 
   # Convert to GEOS geometries and create a GEOS collection
   lines_list_geos <- lapply(paths$edge_paths, function(x) {

@@ -47,6 +47,12 @@ For exact boundary terminals, pass the same boundary points to
 \code{\link[=cnt_skeleton]{cnt_skeleton()}} as \code{anchors}. Those anchors become degree-one graph
 nodes, so \code{\link[=cnt_path]{cnt_path()}} returns zero endpoint distance from the supplied
 points rather than nearest-node snaps.
+
+Every start point's nearest skeleton node must be connected to the end
+point's nearest node. Using \code{anchors} in \code{\link[=cnt_skeleton]{cnt_skeleton()}} ensures that
+terminal nodes exist, but it does not make a multi-component skeleton
+globally connected. If any requested route is empty, \code{\link[=cnt_path]{cnt_path()}} stops
+without returning partial paths.
 }
 \examples{
 library(sf)
