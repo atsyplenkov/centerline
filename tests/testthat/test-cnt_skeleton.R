@@ -707,3 +707,198 @@ test_that("straight skeleton accepts the same anchors contract", {
     expect_equal(unname(aug$degree[[which(d == 0)[[1]]]]), 1L)
   }
 })
+
+# Protected Voronoi preparation ------------------------------------------
+
+protected_voronoi_fixture <- function(scale = 1) {
+  #fmt: skip
+  exterior <- matrix(
+    c(
+      0, 0, 2, 0, 4, 0, 6, 0, 8, 0, 10, 0,
+      10, 2, 10, 4, 10, 6,
+      8, 6, 6, 6, 4, 6, 2, 6, 0, 6,
+      0, 4, 0, 2, 0, 0
+    ) * scale,
+    ncol = 2,
+    byrow = TRUE
+  )
+  hole <- matrix(
+    c(3, 2, 3, 4, 7, 4, 7, 2, 3, 2) * scale,
+    ncol = 2,
+    byrow = TRUE
+  )
+  polygon <- geos::as_geos_geometry(sf::st_polygon(list(exterior, hole)))
+  anchors <- c(
+    geos::geos_make_point(4 * scale, 0),
+    geos::geos_make_point(4.0000005 * scale, 0),
+    geos::geos_make_point(5 * scale, 0),
+    geos::geos_make_point(6.5 * scale, 0),
+    geos::geos_make_point(7.5 * scale, 0),
+    geos::geos_make_point(5 * scale, 2 * scale)
+  )
+  list(polygon = polygon, anchors = anchors, scale = scale)
+}
+
+expect_exact_ring_membership <- function(prepared, anchors) {
+  pc <- wk::wk_coords(prepared)
+  ac <- wk::wk_coords(anchors)
+  for (i in seq_len(nrow(ac))) {
+    expect_true(any(pc$x == ac$x[[i]] & pc$y == ac$y[[i]]))
+  }
+}
+
+test_that("prepare_polygon_for_skeleton matches unprotected branches exactly", {
+  data <- protected_voronoi_fixture()
+  polygon <- data$polygon
+  anchors <- data$anchors
+
+  expect_identical(
+    unclass(wk::as_wkb(prepare_polygon_for_skeleton(polygon, keep = 0.5))),
+    unclass(wk::as_wkb(geos_ms_simplify(polygon, keep = 0.5)))
+  )
+  expect_identical(
+    unclass(wk::as_wkb(prepare_polygon_for_skeleton(
+      polygon,
+      keep = 1,
+      protect = anchors
+    ))),
+    unclass(wk::as_wkb(polygon))
+  )
+  expect_identical(
+    unclass(wk::as_wkb(prepare_polygon_for_skeleton(
+      polygon,
+      keep = 1.5,
+      protect = anchors
+    ))),
+    unclass(wk::as_wkb(geos_ms_densify(polygon, keep = 1.5)))
+  )
+
+  # Coordinator cutover must not change ordinary no-anchor Voronoi output.
+  expect_identical(
+    unclass(wk::as_wkb(cnt_skeleton(polygon, keep = 0.5))),
+    unclass(wk::as_wkb(cnt_skeleton_voronoi(geos_ms_simplify(
+      polygon,
+      keep = 0.5
+    ))))
+  )
+})
+
+test_that("protected simplification keeps exact exterior and hole anchors", {
+  data <- protected_voronoi_fixture()
+  polygon <- data$polygon
+  anchors <- data$anchors
+
+  prepared <- prepare_polygon_for_skeleton(
+    polygon,
+    keep = 0.3,
+    protect = anchors
+  )
+
+  expect_true(geos::geos_is_valid(prepared))
+  expect_identical(geos::geos_type(prepared), "polygon")
+  expect_exact_ring_membership(prepared, anchors)
+
+  pc <- wk::wk_coords(prepared)
+  ac <- wk::wk_coords(anchors)
+  # Existing exterior vertex, snap case, mid-edge, ordered inserts, hole.
+  expect_true(any(pc$x == ac$x[[1]] & pc$y == ac$y[[1]] & pc$ring_id == 1L))
+  expect_true(any(pc$x == ac$x[[2]] & pc$y == ac$y[[2]] & pc$ring_id == 1L))
+  expect_true(any(pc$x == ac$x[[3]] & pc$y == ac$y[[3]] & pc$ring_id == 1L))
+  expect_true(any(pc$x == ac$x[[4]] & pc$y == ac$y[[4]] & pc$ring_id == 1L))
+  expect_true(any(pc$x == ac$x[[5]] & pc$y == ac$y[[5]] & pc$ring_id == 1L))
+  expect_true(any(pc$x == ac$x[[6]] & pc$y == ac$y[[6]] & pc$ring_id == 2L))
+
+  for (i in seq_along(anchors)) {
+    expect_true(isTRUE(geos::geos_equals(
+      geos::geos_intersection(geos::geos_boundary(prepared), anchors[i]),
+      anchors[i]
+    )))
+  }
+
+  # Unchanged anchor coordinates and every injected site participates.
+  expect_identical(unclass(wk::as_wkb(anchors)), unclass(wk::as_wkb(anchors)))
+  expect_true(all(geos::geos_covers(
+    geos::geos_unique_points(prepared),
+    anchors
+  )))
+})
+
+test_that("protected preparation isolates anchors per polygon part", {
+  left <- protected_voronoi_fixture()$polygon
+  #fmt: skip
+  right_exterior <- matrix(
+    c(
+      20, 0, 22, 0, 24, 0, 26, 0, 28, 0, 30, 0,
+      30, 2, 30, 4, 30, 6,
+      28, 6, 26, 6, 24, 6, 22, 6, 20, 6,
+      20, 4, 20, 2, 20, 0
+    ),
+    ncol = 2,
+    byrow = TRUE
+  )
+  right_hole <- matrix(
+    c(23, 2, 23, 4, 27, 4, 27, 2, 23, 2),
+    ncol = 2,
+    byrow = TRUE
+  )
+  right <- geos::as_geos_geometry(sf::st_polygon(list(
+    right_exterior,
+    right_hole
+  )))
+  left_anchor <- geos::geos_make_point(5, 0)
+  right_anchor <- geos::geos_make_point(25, 0)
+
+  prep_left <- prepare_polygon_for_skeleton(
+    left,
+    keep = 0.3,
+    protect = left_anchor
+  )
+  prep_right <- prepare_polygon_for_skeleton(
+    right,
+    keep = 0.3,
+    protect = right_anchor
+  )
+
+  expect_exact_ring_membership(prep_left, left_anchor)
+  expect_exact_ring_membership(prep_right, right_anchor)
+
+  lc <- wk::wk_coords(prep_left)
+  rc <- wk::wk_coords(prep_right)
+  expect_false(any(lc$x == 25 & lc$y == 0))
+  expect_false(any(rc$x == 5 & rc$y == 0))
+})
+
+test_that("protected preparation respects relative precision grid scales", {
+  for (scale in c(1e-6, 1e6)) {
+    data <- protected_voronoi_fixture(scale = scale)
+    prepared <- prepare_polygon_for_skeleton(
+      data$polygon,
+      keep = 0.3,
+      protect = data$anchors
+    )
+    expect_true(geos::geos_is_valid(prepared))
+    expect_exact_ring_membership(prepared, data$anchors)
+    expect_true(all(geos::geos_covers(
+      geos::geos_unique_points(prepared),
+      data$anchors
+    )))
+  }
+})
+
+test_that("voronoi anchors at keep < 1 yield zero-distance cnt_path ends", {
+  data <- example_boundary_anchors_geos()
+  polygon <- data$polygon
+  anchors <- data$anchors
+
+  prepared <- prepare_polygon_for_skeleton(
+    polygon,
+    keep = 0.3,
+    protect = anchors
+  )
+  expect_exact_ring_membership(prepared, anchors)
+
+  skeleton <- cnt_skeleton(polygon, keep = 0.3, anchors = anchors)
+  path <- expect_no_warning(cnt_path(skeleton, anchors[1], anchors[2]))
+  expect_equal(geos::geos_distance(geos::geos_point_start(path), anchors[1]), 0)
+  expect_equal(geos::geos_distance(geos::geos_point_end(path), anchors[2]), 0)
+})
