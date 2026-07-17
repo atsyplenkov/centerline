@@ -24,7 +24,6 @@ Imports:
     wk (>= 0.9),
     sf (>= 1.0),
     geos (>= 0.2.4),
-    sfnetworks (>= 0.6),
     checkmate,
     igraph (>= 2.0.0)
 Suggests:
