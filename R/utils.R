@@ -93,13 +93,8 @@ find_outer_nodes <- function(skeleton_geos) {
   c(lonely_end, lonely_start)
 }
 
-find_closest_nodes <- function(sf_graph, nodes_geos) {
-  geos_graph <- sfnetworks::activate(sf_graph, "nodes") |>
-    sf::st_as_sf() |>
-    geos::as_geos_geometry() |>
-    geos::geos_strtree()
-
-  geos::geos_nearest(nodes_geos, geos_graph)
+find_closest_nodes <- function(g, nodes_geos) {
+  skeleton_graph_nearest_nodes(g, nodes_geos)
 }
 
 # Straight skeleton helpers ----------------------------------------------
