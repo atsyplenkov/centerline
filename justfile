@@ -10,7 +10,7 @@ lint:
     jarl check . --fix --allow-dirty || true
 
 # Update R documentation
-document:
+docs:
     Rscript -e "devtools::document()"
 
 # Build and test the R package
