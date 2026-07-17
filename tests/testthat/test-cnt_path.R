@@ -492,3 +492,62 @@ test_that("cnt_path returns exact ordered endpoints for anchored skeletons", {
   )
   expect_equal(as.data.frame(path_terra), as.data.frame(anchors_terra[1]))
 })
+
+
+
+migration_geom_close <- function(actual, baseline_wkb, baseline_length) {
+  tol <- max(1e-3, 1e-6 * baseline_length)
+  actual_len <- as.numeric(geos::geos_length(actual))
+  expect_equal(actual_len, baseline_length, tolerance = tol)
+  baseline <- geos::as_geos_geometry(baseline_wkb)
+  equal_exact <- tryCatch(
+    isTRUE(geos::geos_equals_exact(actual, baseline, tol)),
+    error = function(e) FALSE
+  )
+  if (!equal_exact) {
+    # Allow reverse orientation of the whole path
+    equal_rev <- tryCatch(
+      isTRUE(geos::geos_equals_exact(actual, geos::geos_reverse(baseline), tol)),
+      error = function(e) FALSE
+    )
+    if (!equal_rev) {
+      hd <- as.numeric(geos::geos_distance_hausdorff(actual, baseline))
+      expect_lte(hd, tol)
+    }
+  }
+  invisible(TRUE)
+}
+
+test_that("cnt_path free and anchored routes match graph-migration baseline", {
+  baseline <- readRDS(test_path("fixtures/graph-migration-baseline.rds"))
+  f <- system.file("extdata/example.gpkg", package = "centerline")
+  p <- geos::as_geos_geometry(sf::st_read(f, layer = "polygon", quiet = TRUE))
+  pts <- geos::as_geos_geometry(
+    sf::st_read(f, layer = "polygon_points", quiet = TRUE)
+  )
+  b <- geos::geos_boundary(p)
+  a <- pts[geos::geos_equals(geos::geos_intersection(b, pts), pts)][1:2]
+
+  ordinary <- cnt_skeleton(p, keep = 1)
+  free1 <- cnt_path(ordinary, pts[2], pts[1])
+  free2 <- cnt_path(ordinary, pts[3], pts[1])
+  migration_geom_close(
+    free1,
+    baseline$free_paths_wkb[1],
+    baseline$lengths[["free_path_1"]]
+  )
+  migration_geom_close(
+    free2,
+    baseline$free_paths_wkb[2],
+    baseline$lengths[["free_path_2"]]
+  )
+
+  anchored <- cnt_skeleton(p, keep = 1, anchors = a)
+  apath <- cnt_path(anchored, a[1], a[2])
+  migration_geom_close(
+    apath,
+    baseline$anchored_path_wkb,
+    baseline$lengths[["anchored_path"]]
+  )
+})
+

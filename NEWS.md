@@ -13,6 +13,12 @@ centerline 0.3.0 (unreleased)
   * `cnt_path()` now reports when start and end points cannot be connected
     through the skeleton graph instead of passing an empty path to GEOS.
 
+### UPDATES
+
+  * Skeleton routing and anchor graphs now use igraph directly; the
+    dependency on sfnetworks has been removed. Public geometry APIs are
+    unchanged.
+
 centerline 0.2.5 (2026-03-12)
 =========================
 

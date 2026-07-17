@@ -23,9 +23,9 @@ or \code{geos_geometry} class objects of a \code{LINESTRING} geometry
 Find the shortest path between start and end points within a polygon
 }
 \details{
-The following function uses the \code{\link[sfnetworks:st_network_paths]{sfnetworks::st_network_paths()}} approach to
-connect \code{start_point} with \code{end_point} by using the
-\code{skeleton} of a closed polygon as potential routes.
+The function connects start and end points with weighted shortest paths
+on an undirected skeleton graph using \code{\link[igraph:shortest_paths]{igraph::shortest_paths()}}.
+The \code{skeleton} of a closed polygon provides the potential routes.
 
 It is important to note that multiple starting points are permissible,
 but there can only be \strong{one ending point}. Should there be two or more

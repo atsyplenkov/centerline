@@ -411,3 +411,35 @@ test_that("cnt_path_guess forwards anchors only when building a skeleton", {
   expect_s3_class(result_supplied, "sf")
   expect_contains(get_geom_type(result_supplied), "LINESTRING")
 })
+
+
+test_that("cnt_path_guess shapes[89] matches graph-migration baseline", {
+  baseline <- readRDS(test_path("fixtures/graph-migration-baseline.rds"))
+  shapes <- sf::st_read(
+    system.file("extdata/example.gpkg", package = "centerline"),
+    layer = "shapes",
+    quiet = TRUE
+  )
+  gpath <- cnt_path_guess(shapes[89, ], keep = 1, return_geos = TRUE)
+  tol <- max(1e-3, 1e-6 * baseline$lengths[["guessed_path"]])
+  expect_equal(
+    as.numeric(geos::geos_length(gpath)),
+    baseline$lengths[["guessed_path"]],
+    tolerance = tol
+  )
+  base_geom <- geos::as_geos_geometry(baseline$guessed_path_wkb)
+  equal_exact <- tryCatch(
+    isTRUE(geos::geos_equals_exact(gpath, base_geom, tol)),
+    error = function(e) FALSE
+  )
+  if (!equal_exact) {
+    equal_rev <- tryCatch(
+      isTRUE(geos::geos_equals_exact(gpath, geos::geos_reverse(base_geom), tol)),
+      error = function(e) FALSE
+    )
+    if (!equal_rev) {
+      hd <- as.numeric(geos::geos_distance_hausdorff(gpath, base_geom))
+      expect_lte(hd, tol)
+    }
+  }
+})
