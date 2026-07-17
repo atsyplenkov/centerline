@@ -623,6 +623,35 @@ test_that("add_boundary_anchors rejects early skeleton crossings", {
   )))
 })
 
+test_that("add_boundary_anchors falls back to first skeleton hit", {
+  # Only one junction cluster; the direct chord crosses a blocking segment, so
+  # a full junction connector is invalid and first-hit must attach mid-edge.
+  polygon <- geos::as_geos_geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")
+  skeleton <- c(
+    geos::as_geos_geometry("LINESTRING (2 5, 2 4)"),
+    geos::as_geos_geometry("LINESTRING (2 5, 1.5 4.5)"),
+    geos::as_geos_geometry("LINESTRING (2 5, 3 5)"),
+    geos::as_geos_geometry("LINESTRING (1 4.8, 1 5.2)")
+  ) |>
+    geos::geos_make_collection() |>
+    geos::geos_line_merge()
+  anchor <- geos::as_geos_geometry("POINT (0 5)")
+  augmented <- add_boundary_anchors(skeleton, polygon, anchor)
+
+  expect_true(geos::geos_covers(augmented, skeleton))
+  aug <- skeleton_nodes_network(augmented)
+  d <- as.numeric(sf::st_distance(sf::st_as_sf(anchor), aug$nodes))
+  zero_ids <- which(d == 0)
+  expect_equal(length(zero_ids), 1L)
+  expect_equal(unname(aug$degree[[zero_ids[[1]]]]), 1L)
+  nbrs <- as.integer(igraph::neighbors(aug$network, zero_ids[[1]]))
+  expect_equal(length(nbrs), 1L)
+  target <- aug$xy[nbrs[[1]], 1:2]
+  # First hit is the blocking segment at x = 1, y = 5.
+  expect_equal(target[[1]], 1, tolerance = 1e-9)
+  expect_equal(target[[2]], 5, tolerance = 1e-9)
+})
+
 test_that("anchors attach per unnested polygon part for multi inputs", {
   left <- sf::st_polygon(list(matrix(
     c(0, 0, 1, 0, 1, 1, 0, 1, 0, 0),

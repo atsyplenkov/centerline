@@ -57,14 +57,16 @@
 #' ## Boundary anchors
 #' When \code{anchors} is supplied, the ordinary skeleton is still built from
 #' the polygon alone under the existing \code{keep} and \code{method} behavior.
-#' Each accepted boundary point is then joined to a valid interior junction by a
-#' direct connector that stays inside the polygon, meets the boundary only at
-#' that anchor, and meets the ordinary skeleton only at a pre-existing
-#' degree-at-least-three junction. Connector selection uses planar Euclidean
-#' distance and turn-angle scoring in the input coordinate space; use projected
-#' coordinates when that ranking must be spatially meaningful. Calls fail when
-#' an anchor is off-boundary, shared by multiple parts, duplicated, or has no
-#' valid direct connector.
+#' Each accepted boundary point is joined by a direct interior connector that
+#' stays inside the polygon and meets the boundary only at that anchor.
+#' Candidate junctions are scored among the nearest skeleton junctions (by
+#' planar Euclidean distance and turn angle; use projected coordinates when
+#' that ranking must be spatially meaningful). A full chord to a pre-existing
+#' degree-at-least-three junction is preferred; if every such chord crosses
+#' other skeleton branches, the connector is clipped to the first skeleton hit
+#' along the same ray (mid-edge T-junction). Calls fail when an anchor is
+#' off-boundary, shared by multiple parts, duplicated, or has no valid
+#' connector.
 #'
 #' @references Voronoi, G. (1908). Nouvelles applications des paramètres
 #' continus à la théorie des formes quadratiques. Journal für die reine und

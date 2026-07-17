@@ -43,8 +43,64 @@ match_boundary_anchors <- function(polygons, anchors) {
   membership
 }
 
+# Default number of nearest junctions scored before expanding.
+anchor_candidate_k <- 32L
+
+point_xy <- function(geom) {
+  coords <- wk::wk_coords(geom)
+  c(coords$x[[1]], coords$y[[1]])
+}
+
+continuation_angle <- function(anchor_xy, junction_xy, neighbor_xy) {
+  # Directed continuation: angle between anchor->junction and
+  # junction->neighbor. Straight continuation is 0; a U-turn is 180.
+  # The fixture-validated ranking uses the smaller supplement so both
+  # approved junctions retain their observed 21.2 / 67.9 scores.
+  v1 <- junction_xy - anchor_xy
+  v2 <- neighbor_xy - junction_xy
+  n1 <- sqrt(sum(v1 * v1))
+  n2 <- sqrt(sum(v2 * v2))
+  if (n1 == 0 || n2 == 0) {
+    return(NA_real_)
+  }
+  cosine <- sum(v1 * v2) / (n1 * n2)
+  cosine <- max(-1, min(1, cosine))
+  angle <- acos(cosine) * 180 / pi
+  min(angle, 180 - angle)
+}
+
+# Collect point locations from a skeleton/connector intersection geometry.
+intersection_hit_points <- function(geom) {
+  if (geos::geos_is_empty(geom)) {
+    return(NULL)
+  }
+
+  type <- geos::geos_type(geom)
+  if (identical(type, "point")) {
+    return(geom)
+  }
+  if (identical(type, "multipoint")) {
+    return(geos::geos_unnest(geom, keep_multi = FALSE))
+  }
+
+  # linestring / multilinestring / geometrycollection: unique vertices
+  pts <- geos::geos_unique_points(geom)
+  if (geos::geos_is_empty(pts)) {
+    return(NULL)
+  }
+  if (identical(geos::geos_type(pts), "point")) {
+    return(pts)
+  }
+  geos::geos_unnest(pts, keep_multi = FALSE)
+}
+
 # Augment one ordinary skeleton with direct connectors from boundary anchors
 # to valid interior junctions. Anchors never become Voronoi sites.
+#
+# Candidate search scores only the K nearest cleaned junctions (expanding K
+# until success or all junctions are tried). Connectors prefer a full chord
+# to a degree-at-least-three junction; if every full chord fails, fall back to
+# the first skeleton hit along the same ranked rays (mid-edge T-junction).
 add_boundary_anchors <- function(skeleton, polygon, anchors) {
   if (is.null(anchors) || length(anchors) == 0L) {
     return(skeleton)
@@ -154,30 +210,19 @@ add_boundary_anchors <- function(skeleton, polygon, anchors) {
     )
   }
 
-  point_xy <- function(geom) {
-    coords <- wk::wk_coords(geom)
-    c(coords$x[[1]], coords$y[[1]])
+  n_junctions <- length(cleaned_junction_ids)
+  # Junction coordinate matrix and raw targets (numeric hot path).
+  j_xy <- cleaned_xy[cleaned_junction_ids, 1:2, drop = FALSE]
+  j_raw_id <- as.integer(mapped_raw)
+
+  # Adjacency once; avoids igraph::neighbors per junction per anchor.
+  cleaned_adj <- vector("list", nrow(cleaned_xy))
+  for (cid in cleaned_junction_ids) {
+    cleaned_adj[[cid]] <- as.integer(igraph::neighbors(cleaned_network, cid))
   }
 
-  continuation_angle <- function(anchor_xy, junction_xy, neighbor_xy) {
-    # Directed continuation: angle between anchor->junction and
-    # junction->neighbor. Straight continuation is 0; a U-turn is 180.
-    # The fixture-validated ranking uses the smaller supplement so both
-    # approved junctions retain their observed 21.2 / 67.9 scores.
-    v1 <- junction_xy - anchor_xy
-    v2 <- neighbor_xy - junction_xy
-    n1 <- sqrt(sum(v1 * v1))
-    n2 <- sqrt(sum(v2 * v2))
-    if (n1 == 0 || n2 == 0) {
-      return(NA_real_)
-    }
-    cosine <- sum(v1 * v2) / (n1 * n2)
-    cosine <- max(-1, min(1, cosine))
-    angle <- acos(cosine) * 180 / pi
-    min(angle, 180 - angle)
-  }
   select_inward_neighbor <- function(cleaned_id, anchor_xy) {
-    neighbours <- as.integer(igraph::neighbors(cleaned_network, cleaned_id))
+    neighbours <- cleaned_adj[[cleaned_id]]
     if (length(neighbours) == 0L) {
       return(NA_integer_)
     }
@@ -199,7 +244,7 @@ add_boundary_anchors <- function(skeleton, polygon, anchors) {
     candidates[[which.min(angles)]]
   }
 
-  connector_valid_for_anchor <- function(connector, anchor, mapped_raw_pt) {
+  connector_valid_for_anchor <- function(connector, anchor, target_pt) {
     covered <- isTRUE(geos::geos_covered_by(connector, polygon))
     boundary_ok <- isTRUE(geos::geos_equals(
       geos::geos_intersection(connector, boundary),
@@ -207,13 +252,118 @@ add_boundary_anchors <- function(skeleton, polygon, anchors) {
     ))
     skeleton_ok <- isTRUE(geos::geos_equals(
       geos::geos_intersection(connector, ordinary_skeleton),
-      mapped_raw_pt
+      target_pt
     ))
     list(
       covered = covered,
       boundary = boundary_ok,
       skeleton = skeleton_ok,
       ok = covered && boundary_ok && skeleton_ok
+    )
+  }
+
+  # Score a subset of junction indices (1..n_junctions) for one anchor.
+  # Returns a matrix sorted by cost with columns:
+  # j_idx, raw_id, cleaned_x, cleaned_y, distance, turn_angle, cost
+  score_junction_subset <- function(axy, j_idx) {
+    if (length(j_idx) == 0L) {
+      return(matrix(numeric(), nrow = 0L, ncol = 7L))
+    }
+
+    n <- length(j_idx)
+    out_j <- integer(n)
+    out_raw <- integer(n)
+    out_x <- numeric(n)
+    out_y <- numeric(n)
+    out_dist <- numeric(n)
+    out_ang <- numeric(n)
+    out_cost <- numeric(n)
+    keep <- logical(n)
+
+    for (i in seq_len(n)) {
+      j <- j_idx[[i]]
+      cid <- cleaned_junction_ids[[j]]
+      cxy <- j_xy[j, ]
+      nid <- select_inward_neighbor(cid, axy)
+      if (is.na(nid)) {
+        next
+      }
+      ang <- continuation_angle(axy, cxy, cleaned_xy[nid, 1:2])
+      if (is.na(ang)) {
+        next
+      }
+      dist <- sqrt((cxy[[1]] - axy[[1]])^2 + (cxy[[2]] - axy[[2]])^2)
+      keep[[i]] <- TRUE
+      out_j[[i]] <- j
+      out_raw[[i]] <- j_raw_id[[j]]
+      out_x[[i]] <- cxy[[1]]
+      out_y[[i]] <- cxy[[2]]
+      out_dist[[i]] <- dist
+      out_ang[[i]] <- ang
+      out_cost[[i]] <- dist * (1 + ang / 90)
+    }
+
+    if (!any(keep)) {
+      return(matrix(numeric(), nrow = 0L, ncol = 7L))
+    }
+
+    mat <- cbind(
+      out_j[keep],
+      out_raw[keep],
+      out_x[keep],
+      out_y[keep],
+      out_dist[keep],
+      out_ang[keep],
+      out_cost[keep]
+    )
+    # Rank by cost, distance, turn angle, then cleaned coordinates.
+    ord <- order(mat[, 7], mat[, 5], mat[, 6], mat[, 3], mat[, 4])
+    mat <- mat[ord, , drop = FALSE]
+    # When several cleaned candidates map to one raw junction, keep best.
+    mat <- mat[!duplicated(mat[, 2]), , drop = FALSE]
+    mat <- mat[
+      order(mat[, 7], mat[, 5], mat[, 6], mat[, 3], mat[, 4]),
+      ,
+      drop = FALSE
+    ]
+    mat
+  }
+
+  # First skeleton hit along anchor -> target_xy (excluding the anchor).
+  first_hit_connector <- function(axy, anchor, target_xy) {
+    full <- geos::geos_make_linestring(
+      x = c(axy[[1]], target_xy[[1]]),
+      y = c(axy[[2]], target_xy[[2]]),
+      crs = crs
+    )
+    s_int <- geos::geos_intersection(full, ordinary_skeleton)
+    hits <- intersection_hit_points(s_int)
+    if (is.null(hits) || length(hits) == 0L) {
+      return(NULL)
+    }
+
+    d <- as.numeric(geos::geos_distance(hits, anchor))
+    # Hits at the anchor itself mean the skeleton already reaches the boundary.
+    keep <- is.finite(d) & d > grid_size
+    if (!any(keep)) {
+      return(list(on_skeleton = TRUE))
+    }
+    hits <- hits[keep]
+    d <- d[keep]
+    foot <- hits[which.min(d)]
+    fxy <- point_xy(foot)
+    connector <- geos::geos_make_linestring(
+      x = c(axy[[1]], fxy[[1]]),
+      y = c(axy[[2]], fxy[[2]]),
+      crs = crs
+    )
+    checks <- connector_valid_for_anchor(connector, anchor, foot)
+    list(
+      on_skeleton = FALSE,
+      connector = connector,
+      foot = foot,
+      checks = checks,
+      distance = sqrt((fxy[[1]] - axy[[1]])^2 + (fxy[[2]] - axy[[2]])^2)
     )
   }
 
@@ -258,101 +408,130 @@ add_boundary_anchors <- function(skeleton, polygon, anchors) {
 
     axy <- point_xy(anchor)
 
-    scores <- lapply(seq_along(cleaned_junction_ids), function(j) {
-      cid <- cleaned_junction_ids[[j]]
-      rid <- mapped_raw[[j]]
-      cxy <- cleaned_xy[cid, 1:2]
-      nid <- select_inward_neighbor(cid, axy)
-      if (is.na(nid)) {
-        return(NULL)
-      }
-      ang <- continuation_angle(axy, cxy, cleaned_xy[nid, 1:2])
-      if (is.na(ang)) {
-        return(NULL)
-      }
-      dist <- sqrt(sum((cxy - axy)^2))
-      data.frame(
-        cleaned_id = cid,
-        raw_id = rid,
-        cleaned_x = cxy[[1]],
-        cleaned_y = cxy[[2]],
-        distance = dist,
-        turn_angle = ang,
-        cost = dist * (1 + ang / 90),
-        stringsAsFactors = FALSE
-      )
-    })
-    scores <- Filter(Negate(is.null), scores)
-    if (length(scores) == 0L) {
-      stop("No valid interior junction connector for anchor ", ai)
-    }
-    score_df <- do.call(rbind, scores)
-
-    # Rank by cost, distance, turn angle, then cleaned coordinates.
-    score_df <- score_df[
-      order(
-        score_df$cost,
-        score_df$distance,
-        score_df$turn_angle,
-        score_df$cleaned_x,
-        score_df$cleaned_y
-      ),
-      ,
-      drop = FALSE
-    ]
-    # When several cleaned candidates map to one raw junction, retain the
-    # lowest cleaned-space rank for that raw target.
-    score_df <- score_df[!duplicated(score_df$raw_id), , drop = FALSE]
-    score_df <- score_df[
-      order(
-        score_df$cost,
-        score_df$distance,
-        score_df$turn_angle,
-        score_df$cleaned_x,
-        score_df$cleaned_y
-      ),
-      ,
-      drop = FALSE
-    ]
+    # Squared distances to all junctions (vectorized); used for K-nearest.
+    d2 <- (j_xy[, 1L] - axy[[1]])^2 + (j_xy[, 2L] - axy[[2]])^2
+    dist_order <- order(d2)
 
     chosen <- NULL
     chosen_raw_pt <- NULL
-    last_checks <- NULL
-    for (row in seq_len(nrow(score_df))) {
-      rid <- score_df$raw_id[[row]]
-      rxy <- raw_xy[rid, 1:2]
-      connector <- geos::geos_make_linestring(
-        x = c(axy[[1]], rxy[[1]]),
-        y = c(axy[[2]], rxy[[2]]),
-        crs = crs
-      )
-      raw_pt <- geos::geos_make_point(rxy[[1]], rxy[[2]], crs = crs)
-      checks <- connector_valid_for_anchor(connector, anchor, raw_pt)
-      last_checks <- checks
-      if (isTRUE(checks$ok)) {
-        chosen <- connector
-        chosen_raw_pt <- raw_pt
-        selected_meta[[ai]] <- list(
-          noop = FALSE,
-          raw_id = rid,
-          distance = score_df$distance[[row]],
-          turn_angle = score_df$turn_angle[[row]],
-          cost = score_df$cost[[row]]
+    best_checks <- NULL
+    k <- min(as.integer(anchor_candidate_k), n_junctions)
+
+    repeat {
+      j_idx <- dist_order[seq_len(k)]
+      score_mat <- score_junction_subset(axy, j_idx)
+      if (nrow(score_mat) == 0L) {
+        if (k >= n_junctions) {
+          break
+        }
+        k <- min(n_junctions, max(k * 2L, k + 1L))
+        next
+      }
+
+      # Phase A: full chords to degree-at-least-three junctions.
+      for (row in seq_len(nrow(score_mat))) {
+        rid <- as.integer(score_mat[row, 2L])
+        rxy <- raw_xy[rid, 1:2]
+        connector <- geos::geos_make_linestring(
+          x = c(axy[[1]], rxy[[1]]),
+          y = c(axy[[2]], rxy[[2]]),
+          crs = crs
         )
+        raw_pt <- geos::geos_make_point(rxy[[1]], rxy[[2]], crs = crs)
+        checks <- connector_valid_for_anchor(connector, anchor, raw_pt)
+        if (
+          is.null(best_checks) ||
+            sum(unlist(checks[1:3])) > sum(unlist(best_checks[1:3]))
+        ) {
+          best_checks <- checks
+        }
+        if (isTRUE(checks$ok)) {
+          chosen <- connector
+          chosen_raw_pt <- raw_pt
+          selected_meta[[ai]] <- list(
+            noop = FALSE,
+            first_hit = FALSE,
+            raw_id = rid,
+            distance = score_mat[row, 5L],
+            turn_angle = score_mat[row, 6L],
+            cost = score_mat[row, 7L]
+          )
+          break
+        }
+      }
+
+      if (!is.null(chosen)) {
         break
       }
+
+      # Phase B: first skeleton hit along the same ranked rays.
+      for (row in seq_len(nrow(score_mat))) {
+        rid <- as.integer(score_mat[row, 2L])
+        rxy <- raw_xy[rid, 1:2]
+        fh <- first_hit_connector(axy, anchor, rxy)
+        if (is.null(fh)) {
+          next
+        }
+        if (isTRUE(fh$on_skeleton)) {
+          # Skeleton already reaches this anchor; treat as noop terminal.
+          chosen <- NULL
+          chosen_raw_pt <- NULL
+          selected_meta[[ai]] <- list(noop = TRUE)
+          # Mark with a sentinel so the outer code accepts noop.
+          chosen <- "noop"
+          break
+        }
+        checks <- fh$checks
+        if (
+          is.null(best_checks) ||
+            sum(unlist(checks[1:3])) > sum(unlist(best_checks[1:3]))
+        ) {
+          best_checks <- checks
+        }
+        if (isTRUE(checks$ok)) {
+          chosen <- fh$connector
+          chosen_raw_pt <- fh$foot
+          selected_meta[[ai]] <- list(
+            noop = FALSE,
+            first_hit = TRUE,
+            raw_id = rid,
+            distance = fh$distance,
+            turn_angle = score_mat[row, 6L],
+            cost = score_mat[row, 7L]
+          )
+          break
+        }
+      }
+
+      if (!is.null(chosen)) {
+        break
+      }
+
+      if (k >= n_junctions) {
+        break
+      }
+      k <- min(n_junctions, max(k * 2L, k + 1L))
+    }
+
+    if (identical(chosen, "noop")) {
+      selected_connectors[[ai]] <- NULL
+      selected_raw_pts[[ai]] <- NULL
+      next
     }
 
     if (is.null(chosen)) {
+      if (is.null(best_checks)) {
+        stop("No valid interior junction connector for anchor ", ai)
+      }
       stop(
         "No valid interior junction connector for anchor ",
         ai,
         "; covered_by=",
-        last_checks$covered,
+        best_checks$covered,
         ", boundary_equals_anchor=",
-        last_checks$boundary,
+        best_checks$boundary,
         ", skeleton_equals_junction=",
-        last_checks$skeleton
+        best_checks$skeleton
       )
     }
 
@@ -423,14 +602,31 @@ add_boundary_anchors <- function(skeleton, polygon, anchors) {
       )
     }
 
-    # Connector other endpoint was a pre-existing raw junction.
-    rid <- selected_meta[[ai]]$raw_id
-    if (is.null(rid) || raw_degree[[rid]] < 3L) {
-      stop(
-        "Postcondition failed: connector target for anchor ",
-        ai,
-        " was not a pre-existing degree-at-least-three junction"
-      )
+    if (isTRUE(selected_meta[[ai]]$first_hit)) {
+      # Mid-edge foot must lie on the ordinary skeleton.
+      foot <- selected_raw_pts[[ai]]
+      on_sk <- isTRUE(geos::geos_covered_by(foot, ordinary_skeleton)) ||
+        isTRUE(geos::geos_intersects(foot, ordinary_skeleton)) ||
+        isTRUE(
+          as.numeric(geos::geos_distance(foot, ordinary_skeleton)) <= grid_size
+        )
+      if (!on_sk) {
+        stop(
+          "Postcondition failed: first-hit foot for anchor ",
+          ai,
+          " does not lie on the ordinary skeleton"
+        )
+      }
+    } else {
+      # Full-chord target was a pre-existing raw junction.
+      rid <- selected_meta[[ai]]$raw_id
+      if (is.null(rid) || raw_degree[[rid]] < 3L) {
+        stop(
+          "Postcondition failed: connector target for anchor ",
+          ai,
+          " was not a pre-existing degree-at-least-three junction"
+        )
+      }
     }
   }
 
