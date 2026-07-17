@@ -7,9 +7,9 @@
 #' \code{start_point} parameters.
 #'
 #' @details
-#' The following function uses the [sfnetworks::st_network_paths()] approach to
-#' connect \code{start_point} with \code{end_point} by using the
-#' \code{skeleton} of a closed polygon as potential routes.
+#' The function connects start and end points with weighted shortest paths
+#' on an undirected skeleton graph using [igraph::shortest_paths()].
+#' The \code{skeleton} of a closed polygon provides the potential routes.
 #'
 #' It is important to note that multiple starting points are permissible,
 #' but there can only be **one ending point**. Should there be two or more
@@ -102,17 +102,11 @@ cnt_path.geos_geometry <- function(skeleton, start_point, end_point) {
   stopifnot(check_points(end_point))
   check_same_class(skeleton, start_point, end_point)
 
-  if (any(get_geom_type(skeleton) == "multilinestring")) {
-    skeleton <- geos::geos_unnest(skeleton, keep_multi = FALSE)
-  }
-
-  # Transform to sf
-  skeleton <- sf::st_as_sf(skeleton)
-  start_point <- sf::st_as_sf(start_point)
-  end_point <- sf::st_as_sf(end_point)
-
-  # Find the paths
-  cnt_path_master(skeleton, start_point, end_point)
+  cnt_path_master(
+    skeleton_geos = skeleton,
+    start_geos = start_point,
+    end_geos = end_point
+  )
 }
 
 #' @export
@@ -123,12 +117,12 @@ cnt_path.sf <- function(skeleton, start_point, end_point) {
   stopifnot(check_points(end_point))
   check_same_class(skeleton, start_point, end_point)
 
-  if (any(get_geom_type(skeleton) == "MULTILINESTRING")) {
-    skeleton <- sf::st_cast(skeleton, "LINESTRING")
-  }
-
   # Find the paths
-  cnt_path_master(skeleton, start_point, end_point) |>
+  cnt_path_master(
+    skeleton_geos = geos::as_geos_geometry(skeleton),
+    start_geos = geos::as_geos_geometry(start_point),
+    end_geos = geos::as_geos_geometry(end_point)
+  ) |>
     sf::st_as_sf() |>
     cbind(sf::st_drop_geometry(start_point))
 }
@@ -140,12 +134,13 @@ cnt_path.sfc <- function(skeleton, start_point, end_point) {
   stopifnot(check_points(start_point))
   stopifnot(check_points(end_point))
 
-  if (any(get_geom_type(skeleton) == "MULTILINESTRING")) {
-    skeleton <- sf::st_cast(skeleton, "LINESTRING")
-  }
-
   # Find the paths
-  cnt_path_master(skeleton, start_point, end_point) |> sf::st_as_sfc()
+  cnt_path_master(
+    skeleton_geos = geos::as_geos_geometry(skeleton),
+    start_geos = geos::as_geos_geometry(start_point),
+    end_geos = geos::as_geos_geometry(end_point)
+  ) |>
+    sf::st_as_sfc()
 }
 
 #' @export
@@ -159,56 +154,34 @@ cnt_path.SpatVector <- function(skeleton, start_point, end_point) {
   # Save CRS
   crs <- terra::crs(skeleton)
 
-  # Transform to sf objects
-  skeleton <- sf::st_as_sf(skeleton)
-  start_point <- sf::st_as_sf(start_point)
-  end_point <- sf::st_as_sf(end_point)
-
-  if (any(get_geom_type(skeleton) == "MULTILINESTRING")) {
-    skeleton <- sf::st_cast(skeleton, "LINESTRING")
-  }
+  start_sf <- sf::st_as_sf(start_point)
 
   # Find the paths
-  cnt_path_master(skeleton, start_point, end_point) |>
+  cnt_path_master(
+    skeleton_geos = terra_to_geos(skeleton),
+    start_geos = terra_to_geos(start_point),
+    end_geos = terra_to_geos(end_point)
+  ) |>
     wk::as_wkt() |>
     as.character() |>
     terra::vect(crs = crs) |>
-    cbind(sf::st_drop_geometry(start_point))
+    cbind(sf::st_drop_geometry(start_sf))
 }
 
 
-cnt_path_master <- function(skeleton_sf, start_point_sf, end_point_sf) {
-  # Convert skeleton sf object to sfnetworks
-  pol_network <- sfnetworks::as_sfnetwork(
-    x = skeleton_sf,
-    directed = FALSE,
-    length_as_weight = TRUE,
-    edges_as_lines = TRUE
-  )
+cnt_path_master <- function(skeleton_geos, start_geos, end_geos) {
+  g <- skeleton_graph_build(skeleton_geos, crs = wk::wk_crs(skeleton_geos))
 
-  # Convert sfnetworks to igraph
-  df_graph <- igraph::as_data_frame(pol_network)
-  names(df_graph)[3] <- "geometry"
-  df_graph <- df_graph[, c("weight", "geometry")]
-  df_graph$weight <- as.numeric(df_graph$weight)
-
-  # Find indices of nearest nodes for start ...
-  start_nodes <- sf::st_nearest_feature(start_point_sf, pol_network)
-  # ... and end points
-  end_nodes <- sf::st_nearest_feature(end_point_sf, pol_network)
+  start_nodes <- skeleton_graph_nearest_nodes(g, start_geos)
+  end_nodes <- skeleton_graph_nearest_nodes(g, end_geos)
 
   # Check if there are several end nodes
   stopifnot("Only one end point is allowed" = length(end_nodes) == 1)
 
-  # Find the shortest path between two points
-  paths <- base::suppressWarnings(sfnetworks::st_network_paths(
-    pol_network,
-    from = end_nodes,
-    to = start_nodes,
-    weights = "weight"
-  ))
+  # Route from the single end ID to all start IDs
+  edge_paths <- skeleton_graph_paths(g, from = end_nodes, to = start_nodes)
 
-  failed_start_indices <- which(lengths(paths$edge_paths) == 0L)
+  failed_start_indices <- which(lengths(edge_paths) == 0L)
   if (length(failed_start_indices) > 0L) {
     if (length(start_nodes) > 1L) {
       stop(
@@ -225,17 +198,13 @@ cnt_path_master <- function(skeleton_sf, start_point_sf, end_point_sf) {
     )
   }
 
-  # Convert to GEOS geometries and create a GEOS collection
-  lines_list_geos <- lapply(paths$edge_paths, function(x) {
-    df_graph[x, "geometry"]
-  }) |>
-    lapply(geos::as_geos_geometry) |>
-    lapply(geos::geos_make_collection) |>
-    lapply(geos::geos_line_merge)
+  lines_list_geos <- lapply(edge_paths, function(epath) {
+    skeleton_graph_path_line(g, epath)
+  })
 
   # Check if we need to reverse the lines
-  rev_lines_list <- reverse_lines_if_needed(lines_list_geos, end_point_sf)
+  rev_lines_list <- reverse_lines_if_needed(lines_list_geos, end_geos)
 
-  # Return pathes binded together as GEOS geometry
+  # Return paths binded together as GEOS geometry
   do.call(c, rev_lines_list)
 }
